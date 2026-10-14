@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrandLogo } from '../components/BrandLogo';
+import { supabase } from '../../utils/supabase/client';
 
 interface CheckoutFlowViewProps {
   initialEmail?: string;
@@ -38,16 +39,13 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Save email to PostgreSQL waitlist database table
-      await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: cleanEmail }),
-      });
+      // Save email directly to Supabase waitlist table
+      const { error } = await supabase.from('waitlist').insert([{ email: cleanEmail }]);
+      if (error) {
+        console.warn('Supabase waitlist insert note:', error.message);
+      }
     } catch (err) {
-      console.warn('Saved locally; server waitlist sync:', err);
+      console.warn('Saved locally; Supabase waitlist sync:', err);
     } finally {
       setIsSubmitting(false);
       setStep('confirmation');

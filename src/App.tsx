@@ -16,9 +16,10 @@ import { LivePrompterView } from './views/LivePrompterView';
 import { PricingView } from './views/PricingView';
 import { CheckoutFlowView } from './views/CheckoutFlowView';
 import { useAuth } from './context/AuthContext';
+import { supabase } from '../utils/supabase/client';
 
 export default function App() {
-  const { user, token, signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
   const [currentView, setCurrentView] = useState<'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout'>('overview');
   const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter' | 'tracking' | 'recordings'>('scripts');
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
@@ -68,95 +69,114 @@ export default function App() {
     }
   }, [license]);
 
-  // Synchronize with Cloud SQL / Supabase PostgreSQL when user is authenticated
+  // Synchronize directly with Supabase when user is authenticated
   useEffect(() => {
-    if (!token) return;
+    if (!user) return;
     let isCancelled = false;
 
-    // Fetch scripts from database
-    fetch('/api/scripts', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((cloudScripts) => {
+    // Fetch scripts from Supabase
+    supabase
+      .from('scripts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data: cloudScripts, error }) => {
         if (isCancelled) return;
+        if (error) {
+          console.warn('Supabase fetch scripts note:', error.message);
+          return;
+        }
         if (Array.isArray(cloudScripts) && cloudScripts.length > 0) {
           // Format cloud scripts into app state
-          const formatted: Script[] = cloudScripts.map((cs) => ({
+          const formatted: Script[] = cloudScripts.map((cs: any) => ({
             id: cs.id,
             title: cs.title,
-            episodeTag: cs.episodeTag || undefined,
+            episodeTag: cs.episode_tag || undefined,
             category: cs.category || 'draft',
             content: cs.content,
-            pacingWpm: cs.pacingWpm || 140,
-            wordCount: cs.wordCount || 0,
-            estimatedReadTime: cs.estimatedReadTime || '1m 00s',
-            updatedAt: cs.updatedAt || 'Just now',
+            pacingWpm: cs.pacing_wpm || 140,
+            wordCount: cs.word_count || 0,
+            estimatedReadTime: cs.estimated_read_time || '1m 00s',
+            updatedAt: cs.updated_at || 'Just now',
           }));
           setScripts(formatted);
           if (formatted.length > 0) {
             setSelectedScriptId(formatted[0].id);
           }
         } else if (Array.isArray(cloudScripts) && cloudScripts.length === 0) {
-          // Seed initial user scripts into database
-          scripts.forEach((s) => {
-            fetch('/api/scripts', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(s),
-            }).catch(console.error);
+          // Seed initial user scripts into Supabase
+          scripts.forEach(async (s) => {
+            await supabase.from('scripts').upsert({
+              id: s.id,
+              user_id: user.id,
+              title: s.title,
+              episode_tag: s.episodeTag || null,
+              category: s.category,
+              content: s.content,
+              pacing_wpm: s.pacingWpm,
+              word_count: s.wordCount,
+              estimated_read_time: s.estimatedReadTime,
+              updated_at: s.updatedAt,
+            });
           });
         }
-      })
-      .catch((err) => console.error('Error fetching scripts from database:', err));
+      });
 
-    // Fetch user license from database
-    fetch('/api/license', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((lic) => {
+    // Fetch user license from Supabase
+    supabase
+      .from('licenses')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data: lic, error }) => {
         if (isCancelled) return;
-        if (lic && lic.isPro) {
+        if (error) {
+          console.warn('Supabase license fetch note:', error.message);
+          return;
+        }
+        if (lic && lic.is_pro) {
           setLicense({
             isActive: true,
-            key: lic.licenseKey || 'PRO-CLOUD-ACTIVATED',
+            key: 'PRO-CLOUD-ACTIVATED',
             plan: 'lifetime',
             seat: 'Solo Creator',
-            activatedAt: lic.activatedAt ? new Date(lic.activatedAt).toLocaleDateString() : 'Active',
+            activatedAt: lic.activated_at ? new Date(lic.activated_at).toLocaleDateString() : 'Active',
           });
         }
-      })
-      .catch((err) => console.error('Error fetching license from database:', err));
+      });
 
     return () => {
       isCancelled = true;
     };
-  }, [token]);
+  }, [user]);
 
   const activeScript = scripts.find((s) => s.id === selectedScriptId) || scripts[0];
 
-  // Helper to persist script to database
+  // Helper to persist script to Supabase
   const persistScriptToCloud = useCallback(
     async (script: Script) => {
-      if (!token) return;
+      if (!user) return;
       try {
-        await fetch('/api/scripts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(script),
+        const { error } = await supabase.from('scripts').upsert({
+          id: script.id,
+          user_id: user.id,
+          title: script.title,
+          episode_tag: script.episodeTag || null,
+          category: script.category,
+          content: script.content,
+          pacing_wpm: script.pacingWpm,
+          word_count: script.wordCount,
+          estimated_read_time: script.estimatedReadTime,
+          updated_at: script.updatedAt,
         });
+        if (error) {
+          console.warn('Supabase upsert script error:', error.message);
+        }
       } catch (err) {
-        console.error('Failed to sync script to database:', err);
+        console.warn('Local fallback active; Supabase sync note:', err);
       }
     },
-    [token]
+    [user]
   );
 
   // Actions
@@ -222,14 +242,11 @@ export default function App() {
       if (currentView === 'editor') {
         setCurrentView('scripts');
       }
-      if (token) {
+      if (user) {
         try {
-          await fetch(`/api/scripts/${scriptId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await supabase.from('scripts').delete().eq('id', scriptId).eq('user_id', user.id);
         } catch (e) {
-          console.error('Failed to delete script in database:', e);
+          console.warn('Supabase delete script note:', e);
         }
       }
     }
@@ -281,18 +298,6 @@ export default function App() {
         seat: 'Solo Creator',
         activatedAt: new Date().toLocaleDateString(),
       });
-      if (token) {
-        fetch('/api/license/activate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ key }),
-        }).catch((e) => {
-          console.error('Failed to sync license activation:', e);
-        });
-      }
       return true;
     }
     return false;
@@ -309,26 +314,14 @@ export default function App() {
     }
   };
 
-  const handlePurchaseComplete = (email: string) => {
+  const handlePurchaseComplete = (_email: string) => {
     setLicense({
       isActive: true,
-      key: `STRIPE-PURCHASE-${email || 'PAID'}`,
+      key: 'LIFETIME-ACCESS',
       plan: 'lifetime',
       seat: 'Solo Creator',
       activatedAt: new Date().toLocaleDateString(),
     });
-    if (token) {
-      fetch('/api/license/activate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ key: `STRIPE-PAID-${email}` }),
-      }).catch((e) => {
-        console.error('Failed to sync license activation:', e);
-      });
-    }
   };
 
   const handleNavigate = (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => {

@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </p>
                   <span className="text-[10px] text-forest font-semibold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
-                    Postgres Synced
+                    Supabase Synced
                   </span>
                 </div>
               </div>
