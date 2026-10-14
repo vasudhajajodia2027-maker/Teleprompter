@@ -76,6 +76,12 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               </span>
             </div>
 
+            <div className="hidden sm:flex items-center gap-4 text-xs font-body-sm text-ink-soft">
+              <a href="/privacy" className="hover:text-ink hover:underline transition-colors">Privacy</a>
+              <span>•</span>
+              <a href="/terms" className="hover:text-ink hover:underline transition-colors">Terms</a>
+            </div>
+
             <button
               onClick={() => setShowSupportModal(true)}
               className="text-sm font-medium text-ink-soft hover:text-ink hover:underline transition-colors cursor-pointer"
@@ -318,19 +324,19 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-faint font-body-sm">
           <p>© 2026 First Take Studio · Crafted for natural speaking rhythm</p>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => alert("Privacy Guarantee: First Take processes audio locally in your browser memory. We never upload your audio or camera feeds to external servers.")}
+            <a
+              href="/privacy"
               className="hover:text-ink cursor-pointer transition-colors"
             >
               Privacy
-            </button>
+            </a>
             <span>•</span>
-            <button
-              onClick={() => alert("Terms: First Take is a single $19 one-time license for personal and commercial content creation, including all future feature updates.")}
+            <a
+              href="/terms"
               className="hover:text-ink cursor-pointer transition-colors"
             >
               Terms
-            </button>
+            </a>
             <span>•</span>
             <button
               onClick={() => setShowSupportModal(true)}

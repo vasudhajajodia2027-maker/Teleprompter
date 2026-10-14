@@ -3,9 +3,9 @@ import { BrandLogo } from './BrandLogo';
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface SidebarProps {
-  currentView: 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout';
+  currentView: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
   activeSection?: 'scripts' | 'prompter' | 'tracking' | 'recordings';
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
   onNewScript: () => void;
   onSelectSection?: (section: 'scripts' | 'prompter' | 'tracking' | 'recordings') => void;
   isMicActive?: boolean;

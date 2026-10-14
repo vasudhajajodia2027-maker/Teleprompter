@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -27,6 +28,23 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    // Fallback for SPA navigation routes (/privacy, /terms, etc.) in development
+    app.use('*', async (req, res, next) => {
+      const url = req.originalUrl;
+      if (url.startsWith('/api')) {
+        return next();
+      }
+      try {
+        const indexPath = path.resolve(__dirname, 'index.html');
+        let template = await fs.promises.readFile(indexPath, 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        if (vite) vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     app.use(express.static(path.resolve(__dirname, 'dist')));
     app.get('*', (_req, res) => {

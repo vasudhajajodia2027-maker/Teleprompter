@@ -15,14 +15,82 @@ import { ScriptEditorView } from './views/ScriptEditorView';
 import { LivePrompterView } from './views/LivePrompterView';
 import { PricingView } from './views/PricingView';
 import { CheckoutFlowView } from './views/CheckoutFlowView';
+import { PrivacyPolicyView } from './views/PrivacyPolicyView';
+import { TermsOfServiceView } from './views/TermsOfServiceView';
 import { useAuth } from './context/AuthContext';
 import { supabase } from '../utils/supabase/client';
 
+export type AppView = 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
+
+function getInitialView(): AppView {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname.toLowerCase();
+    if (path === '/privacy' || path.startsWith('/privacy')) return 'privacy';
+    if (path === '/terms' || path.startsWith('/terms')) return 'terms';
+    if (path === '/checkout' || path.startsWith('/checkout')) return 'checkout';
+    if (path === '/pricing' || path.startsWith('/pricing')) return 'pricing';
+    if (path === '/scripts' || path.startsWith('/scripts')) return 'scripts';
+    if (path === '/editor' || path.startsWith('/editor')) return 'editor';
+    if (path === '/prompter' || path.startsWith('/prompter')) return 'prompter';
+  }
+  return 'overview';
+}
+
+function getPathForView(view: AppView): string {
+  switch (view) {
+    case 'privacy':
+      return '/privacy';
+    case 'terms':
+      return '/terms';
+    case 'checkout':
+      return '/checkout';
+    case 'pricing':
+      return '/pricing';
+    case 'scripts':
+      return '/scripts';
+    case 'editor':
+      return '/editor';
+    case 'prompter':
+      return '/prompter';
+    case 'overview':
+    default:
+      return '/';
+  }
+}
+
 export default function App() {
   const { user, signInWithGoogle } = useAuth();
-  const [currentView, setCurrentView] = useState<'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout'>('overview');
+  const [currentView, setCurrentView] = useState<AppView>(getInitialView);
   const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter' | 'tracking' | 'recordings'>('scripts');
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
+
+  // Sync state with browser Back/Forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const detected = getInitialView();
+      setCurrentView(detected);
+      if (detected === 'scripts') setActiveSidebarSection('scripts');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Update browser document title based on view
+  useEffect(() => {
+    if (currentView === 'privacy') {
+      document.title = 'Privacy Policy — First Take Studio';
+    } else if (currentView === 'terms') {
+      document.title = 'Terms of Service — First Take Studio';
+    } else if (currentView === 'pricing') {
+      document.title = 'Pricing — First Take Studio';
+    } else if (currentView === 'checkout') {
+      document.title = 'Secure Waitlist — First Take Studio';
+    } else {
+      document.title = 'First Take Studio — Speech-Responsive Teleprompter';
+    }
+  }, [currentView]);
 
   // Load scripts from localStorage or default
   const [scripts, setScripts] = useState<Script[]>(() => {
@@ -183,13 +251,12 @@ export default function App() {
   const handleOpenScriptEditor = (scriptId?: string) => {
     if (scriptId) setSelectedScriptId(scriptId);
     setActiveSidebarSection('scripts');
-    setCurrentView('editor');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleNavigate('editor');
   };
 
   const handleOpenPrompter = (scriptId?: string) => {
     if (scriptId) setSelectedScriptId(scriptId);
-    setCurrentView('prompter');
+    handleNavigate('prompter');
   };
 
   const handleNewScript = () => {
@@ -208,8 +275,7 @@ export default function App() {
     setScripts((prev) => [newScript, ...prev]);
     setSelectedScriptId(newId);
     setActiveSidebarSection('scripts');
-    setCurrentView('editor');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleNavigate('editor');
     persistScriptToCloud(newScript);
   };
 
@@ -240,7 +306,7 @@ export default function App() {
         setSelectedScriptId(remaining[0].id);
       }
       if (currentView === 'editor') {
-        setCurrentView('scripts');
+        handleNavigate('scripts');
       }
       if (user) {
         try {
@@ -271,7 +337,7 @@ export default function App() {
     };
     setScripts((prev) => [imported, ...prev]);
     setSelectedScriptId(imported.id);
-    setCurrentView('editor');
+    handleNavigate('editor');
     persistScriptToCloud(imported);
     alert(`Script "${title}" successfully imported (${words} words).`);
   };
@@ -324,10 +390,18 @@ export default function App() {
     });
   };
 
-  const handleNavigate = (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => {
+  const handleNavigate = (view: AppView) => {
     setCurrentView(view);
     if (view === 'scripts') setActiveSidebarSection('scripts');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Update browser URL seamlessly for real direct URL support
+    if (typeof window !== 'undefined') {
+      const targetPath = getPathForView(view);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ view }, '', targetPath);
+      }
+    }
   };
 
   // Full-screen Checkout Flow View
@@ -348,7 +422,7 @@ export default function App() {
     return (
       <LivePrompterView
         script={activeScript}
-        onExit={() => setCurrentView('scripts')}
+        onExit={() => handleNavigate('scripts')}
         isPro={license.isActive}
       />
     );
@@ -368,10 +442,10 @@ export default function App() {
             onNewScript={handleNewScript}
             onSelectSection={(sec) => {
               setActiveSidebarSection(sec);
-              if (sec === 'scripts') setCurrentView('scripts');
+              if (sec === 'scripts') handleNavigate('scripts');
               else if (sec === 'prompter') handleOpenPrompter(activeScript.id);
               else if (sec === 'tracking' || sec === 'recordings') {
-                setCurrentView('scripts');
+                handleNavigate('scripts');
               }
             }}
           />
@@ -381,7 +455,7 @@ export default function App() {
             <header className="fixed top-0 left-64 right-0 h-16 bg-paper/85 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-paper-line/50 z-40 flex items-center justify-between px-8">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setCurrentView('overview')}
+                  onClick={() => handleNavigate('overview')}
                   className="font-label-meta text-xs text-ink-soft uppercase tracking-wider hover:text-ink transition-colors cursor-pointer flex items-center gap-1.5"
                   title="View Landing Page"
                 >
@@ -440,14 +514,14 @@ export default function App() {
                   onOpenPrompter={handleOpenPrompter}
                   onDuplicateScript={handleDuplicateScript}
                   onDeleteScript={handleDeleteScript}
-                  onBackToScripts={() => setCurrentView('scripts')}
+                  onBackToScripts={() => handleNavigate('scripts')}
                 />
               )}
             </main>
           </div>
         </>
       ) : (
-        /* Standalone Marketing / Public Layout (Landing Page & Pricing) */
+        /* Standalone Marketing / Public Layout (Landing Page, Pricing, Privacy, Terms) */
         <div className="flex flex-col min-h-screen">
           <Header
             currentView={currentView}
@@ -455,21 +529,25 @@ export default function App() {
             isPro={license.isActive}
           />
           <main className="w-full pt-16 bg-paper min-h-screen flex-1">
-            {currentView === 'overview' ? (
-              <LandingPage
-                onNavigate={handleNavigate}
-                onOpenScriptEditor={handleOpenScriptEditor}
-              />
-            ) : (
+            {currentView === 'privacy' ? (
+              <PrivacyPolicyView onNavigate={handleNavigate} />
+            ) : currentView === 'terms' ? (
+              <TermsOfServiceView onNavigate={handleNavigate} />
+            ) : currentView === 'pricing' ? (
               <PricingView
                 license={license}
                 onStartCheckout={() => handleNavigate('checkout')}
                 onDeactivateKey={handleDeactivateKey}
                 onOpenSandbox={() => handleNavigate('scripts')}
               />
+            ) : (
+              <LandingPage
+                onNavigate={handleNavigate}
+                onOpenScriptEditor={handleOpenScriptEditor}
+              />
             )}
           </main>
-          <Footer />
+          <Footer onNavigate={handleNavigate} />
         </div>
       )}
     </div>

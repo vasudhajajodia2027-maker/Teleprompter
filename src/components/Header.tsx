@@ -2,8 +2,8 @@ import React from 'react';
 import { BrandLogo } from './BrandLogo';
 
 interface HeaderProps {
-  currentView: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout';
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => void;
+  currentView: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
   isPro?: boolean;
 }
 

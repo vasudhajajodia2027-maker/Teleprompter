@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { BrandLogo } from './BrandLogo';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate?: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, view: 'privacy' | 'terms') => {
+    // If not middle-clicked, Ctrl/Cmd-clicked, let client-side router handle smooth transition
+    if (onNavigate && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+      e.preventDefault();
+      onNavigate(view);
+    }
+  };
 
   return (
     <>
@@ -16,18 +28,20 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => alert("Privacy First: All scripts and recordings stay 100% inside your local browser storage. No audio or video is ever transmitted to remote servers.")}
+            <a 
+              href="/privacy"
+              onClick={(e) => handleLinkClick(e, 'privacy')}
               className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
             >
               Privacy
-            </button>
-            <button 
-              onClick={() => alert("First Take License: Perpetual license allows personal and commercial video creation on all your personal computers with no recurring fees.")}
+            </a>
+            <a 
+              href="/terms"
+              onClick={(e) => handleLinkClick(e, 'terms')}
               className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
             >
               Terms
-            </button>
+            </a>
             <button 
               onClick={() => setShowShortcutsModal(true)}
               className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
@@ -37,7 +51,7 @@ export const Footer: React.FC = () => {
           </div>
 
           <p className="font-label-meta text-xs text-ink-faint">
-            © 2025 First Take. Crafted for natural speaking rhythm.
+            © 2026 First Take Studio · Crafted for natural speaking rhythm.
           </p>
         </div>
       </footer>
@@ -60,7 +74,7 @@ export const Footer: React.FC = () => {
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">Space</kbd>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Stop & Finish Recording Take</span>
+                <span className="text-ink-soft">Stop &amp; Finish Recording Take</span>
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">R</kbd>
               </div>
               <div className="flex items-center justify-between">
