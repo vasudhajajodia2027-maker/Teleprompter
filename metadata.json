@@ -1,0 +1,6 @@
+{
+  "name": "First Take Studio",
+  "description": "Speech-responsive teleprompter for founders that follows your voice rhythm.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
