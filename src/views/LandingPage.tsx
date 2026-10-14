@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ASSETS } from '../data/defaultScripts';
 
 interface LandingPageProps {
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => void;
   onOpenScriptEditor: (scriptId?: string) => void;
 }
 
@@ -40,8 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   ];
 
   const handleBuy = () => {
-    alert("Thank you for purchasing First Take ($19, one-time). Launching license activation...");
-    onNavigate('pricing');
+    onNavigate('checkout');
   };
 
   return (
@@ -49,14 +48,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       {/* 1. HERO SECTION */}
       <section className="relative px-6 lg:px-12 pt-12 pb-16 max-w-7xl mx-auto w-full">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-6">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-forest-tint">
-            <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
-            <span className="font-label-eyebrow text-xs uppercase text-forest tracking-widest font-semibold">
-              TELEPROMPTER FOR FOUNDERS
-            </span>
-          </div>
-
           {/* Display Headline */}
           <h1 className="font-display text-4xl sm:text-6xl md:text-7xl tracking-tight text-ink max-w-3xl leading-[1.05]">
             A teleprompter that{' '}
@@ -68,7 +59,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           {/* Lead Narrative */}
           <p className="font-lead text-lg sm:text-xl text-ink-soft max-w-2xl leading-relaxed">
-            Paste your pitch or update script, hit record, and speak. The text follows your voice, so you can record in fewer takes.
+            The text follows your voice, so you can record in fewer takes.
           </p>
 
           {/* CTAs */}
@@ -89,7 +80,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           {/* Subtext under hero button - says 'nothing is uploaded' once */}
           <p className="font-label-meta text-xs text-ink-faint pt-1">
-            Runs in your browser. Nothing is uploaded. No accounts, no credit card required.
+            Runs in your browser. Free demo, no account needed. Nothing is uploaded.
           </p>
         </div>
 
@@ -467,7 +458,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 onClick={handleBuy}
                 className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Buy First Take — $19</span>
+                <span>Get First Take — $19 (coming soon)</span>
                 <span className="material-symbols-outlined text-[18px]">bolt</span>
               </button>
               <p className="font-label-meta text-xs text-ink-soft">

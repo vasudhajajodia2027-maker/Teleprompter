@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Script, LicenseStatus } from './types';
 import { DEFAULT_SCRIPTS } from './data/defaultScripts';
 import { Header } from './components/Header';
@@ -14,9 +14,12 @@ import { MyScriptsView } from './views/MyScriptsView';
 import { ScriptEditorView } from './views/ScriptEditorView';
 import { LivePrompterView } from './views/LivePrompterView';
 import { PricingView } from './views/PricingView';
+import { CheckoutFlowView } from './views/CheckoutFlowView';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing'>('overview');
+  const { user, token, signInWithGoogle } = useAuth();
+  const [currentView, setCurrentView] = useState<'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout'>('overview');
   const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter' | 'tracking' | 'recordings'>('scripts');
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
 
@@ -47,7 +50,7 @@ export default function App() {
     };
   });
 
-  // Save scripts to localStorage
+  // Save scripts to localStorage as local-first fallback
   useEffect(() => {
     try {
       localStorage.setItem('ft_scripts_store', JSON.stringify(scripts));
@@ -56,7 +59,7 @@ export default function App() {
     }
   }, [scripts]);
 
-  // Save license to localStorage
+  // Save license to localStorage as local-first fallback
   useEffect(() => {
     try {
       localStorage.setItem('ft_license_store', JSON.stringify(license));
@@ -65,7 +68,96 @@ export default function App() {
     }
   }, [license]);
 
+  // Synchronize with Cloud SQL / Supabase PostgreSQL when user is authenticated
+  useEffect(() => {
+    if (!token) return;
+    let isCancelled = false;
+
+    // Fetch scripts from database
+    fetch('/api/scripts', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((cloudScripts) => {
+        if (isCancelled) return;
+        if (Array.isArray(cloudScripts) && cloudScripts.length > 0) {
+          // Format cloud scripts into app state
+          const formatted: Script[] = cloudScripts.map((cs) => ({
+            id: cs.id,
+            title: cs.title,
+            episodeTag: cs.episodeTag || undefined,
+            category: cs.category || 'draft',
+            content: cs.content,
+            pacingWpm: cs.pacingWpm || 140,
+            wordCount: cs.wordCount || 0,
+            estimatedReadTime: cs.estimatedReadTime || '1m 00s',
+            updatedAt: cs.updatedAt || 'Just now',
+          }));
+          setScripts(formatted);
+          if (formatted.length > 0) {
+            setSelectedScriptId(formatted[0].id);
+          }
+        } else if (Array.isArray(cloudScripts) && cloudScripts.length === 0) {
+          // Seed initial user scripts into database
+          scripts.forEach((s) => {
+            fetch('/api/scripts', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(s),
+            }).catch(console.error);
+          });
+        }
+      })
+      .catch((err) => console.error('Error fetching scripts from database:', err));
+
+    // Fetch user license from database
+    fetch('/api/license', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((lic) => {
+        if (isCancelled) return;
+        if (lic && lic.isPro) {
+          setLicense({
+            isActive: true,
+            key: lic.licenseKey || 'PRO-CLOUD-ACTIVATED',
+            plan: 'lifetime',
+            seat: 'Solo Creator',
+            activatedAt: lic.activatedAt ? new Date(lic.activatedAt).toLocaleDateString() : 'Active',
+          });
+        }
+      })
+      .catch((err) => console.error('Error fetching license from database:', err));
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token]);
+
   const activeScript = scripts.find((s) => s.id === selectedScriptId) || scripts[0];
+
+  // Helper to persist script to database
+  const persistScriptToCloud = useCallback(
+    async (script: Script) => {
+      if (!token) return;
+      try {
+        await fetch('/api/scripts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(script),
+        });
+      } catch (err) {
+        console.error('Failed to sync script to database:', err);
+      }
+    },
+    [token]
+  );
 
   // Actions
   const handleOpenScriptEditor = (scriptId?: string) => {
@@ -98,6 +190,7 @@ export default function App() {
     setActiveSidebarSection('scripts');
     setCurrentView('editor');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    persistScriptToCloud(newScript);
   };
 
   const handleDuplicateScript = (scriptId: string) => {
@@ -112,10 +205,10 @@ export default function App() {
     };
     setScripts((prev) => [duplicated, ...prev]);
     setSelectedScriptId(duplicated.id);
-    alert(`Duplicated "${target.title}" into your drafts.`);
+    persistScriptToCloud(duplicated);
   };
 
-  const handleDeleteScript = (scriptId: string) => {
+  const handleDeleteScript = async (scriptId: string) => {
     if (scripts.length <= 1) {
       alert('You must keep at least one script in your editorial workspace.');
       return;
@@ -128,6 +221,16 @@ export default function App() {
       }
       if (currentView === 'editor') {
         setCurrentView('scripts');
+      }
+      if (token) {
+        try {
+          await fetch(`/api/scripts/${scriptId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch (e) {
+          console.error('Failed to delete script in database:', e);
+        }
       }
     }
   };
@@ -152,7 +255,13 @@ export default function App() {
     setScripts((prev) => [imported, ...prev]);
     setSelectedScriptId(imported.id);
     setCurrentView('editor');
+    persistScriptToCloud(imported);
     alert(`Script "${title}" successfully imported (${words} words).`);
+  };
+
+  const handleUpdateScript = (updated: Script) => {
+    setScripts((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    persistScriptToCloud(updated);
   };
 
   const handleExportAllJson = () => {
@@ -163,7 +272,7 @@ export default function App() {
     a.click();
   };
 
-  const handleActivateKey = (key: string) => {
+  const handleActivateKey = (key: string): boolean => {
     if (key.length >= 6) {
       setLicense({
         isActive: true,
@@ -172,6 +281,18 @@ export default function App() {
         seat: 'Solo Creator',
         activatedAt: new Date().toLocaleDateString(),
       });
+      if (token) {
+        fetch('/api/license/activate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ key }),
+        }).catch((e) => {
+          console.error('Failed to sync license activation:', e);
+        });
+      }
       return true;
     }
     return false;
@@ -188,11 +309,46 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing') => {
+  const handlePurchaseComplete = (email: string) => {
+    setLicense({
+      isActive: true,
+      key: `STRIPE-PURCHASE-${email || 'PAID'}`,
+      plan: 'lifetime',
+      seat: 'Solo Creator',
+      activatedAt: new Date().toLocaleDateString(),
+    });
+    if (token) {
+      fetch('/api/license/activate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ key: `STRIPE-PAID-${email}` }),
+      }).catch((e) => {
+        console.error('Failed to sync license activation:', e);
+      });
+    }
+  };
+
+  const handleNavigate = (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => {
     setCurrentView(view);
     if (view === 'scripts') setActiveSidebarSection('scripts');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Full-screen Checkout Flow View
+  if (currentView === 'checkout') {
+    return (
+      <CheckoutFlowView
+        initialEmail={user?.email || ''}
+        onExit={() => handleNavigate('overview')}
+        onCompletePurchase={handlePurchaseComplete}
+        onOpenPrompter={() => handleOpenPrompter(activeScript.id)}
+        onOpenScripts={() => handleNavigate('scripts')}
+      />
+    );
+  }
 
   // Full-screen Live Prompter View
   if (currentView === 'prompter') {
@@ -250,13 +406,23 @@ export default function App() {
                   <span className="material-symbols-outlined text-[16px] text-forest">mic</span>
                   <span>Auto-Scroll Active</span>
                 </div>
-                <button
-                  onClick={() => setCurrentView('pricing')}
-                  className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-xs hover:opacity-90 transition-opacity cursor-pointer"
-                  title={license.isActive ? "Pro Member" : "Free Plan - Upgrade"}
-                >
-                  <span className="material-symbols-outlined text-[18px]">person</span>
-                </button>
+                {user ? (
+                  <div
+                    className="w-8 h-8 rounded-full bg-forest text-on-forest flex items-center justify-center font-bold text-xs shadow-xs"
+                    title={`Logged in as ${user.email} (Database Connected)`}
+                  >
+                    {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                ) : (
+                  <button
+                    onClick={signInWithGoogle}
+                    className="px-3 py-1.5 rounded-lg bg-paper-sunk hover:bg-paper-line/40 text-ink font-body-sm text-xs font-medium border border-paper-line flex items-center gap-1.5 cursor-pointer transition-colors"
+                    title="Sign in with Google to sync with database"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-forest">cloud</span>
+                    <span>Sign in</span>
+                  </button>
+                )}
               </div>
             </header>
 
@@ -277,11 +443,7 @@ export default function App() {
               ) : (
                 <ScriptEditorView
                   script={activeScript}
-                  onUpdateScript={(updated) => {
-                    setScripts((prev) =>
-                      prev.map((s) => (s.id === updated.id ? updated : s))
-                    );
-                  }}
+                  onUpdateScript={handleUpdateScript}
                   onOpenPrompter={handleOpenPrompter}
                   onDuplicateScript={handleDuplicateScript}
                   onDeleteScript={handleDeleteScript}
@@ -308,7 +470,7 @@ export default function App() {
             ) : (
               <PricingView
                 license={license}
-                onActivateKey={handleActivateKey}
+                onStartCheckout={() => handleNavigate('checkout')}
                 onDeactivateKey={handleDeactivateKey}
                 onOpenSandbox={() => handleNavigate('scripts')}
               />

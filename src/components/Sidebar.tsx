@@ -1,10 +1,11 @@
 import React from 'react';
 import { BrandLogo } from './BrandLogo';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface SidebarProps {
-  currentView: 'scripts' | 'editor' | 'prompter' | 'pricing';
+  currentView: 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout';
   activeSection?: 'scripts' | 'prompter' | 'tracking' | 'recordings';
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout') => void;
   onNewScript: () => void;
   onSelectSection?: (section: 'scripts' | 'prompter' | 'tracking' | 'recordings') => void;
   isMicActive?: boolean;
@@ -18,6 +19,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectSection,
   isMicActive = true,
 }) => {
+  const { user, signInWithGoogle, signOutUser } = useAuth();
+
   const handleNav = (target: 'scripts' | 'prompter' | 'tracking' | 'recordings') => {
     if (onSelectSection) onSelectSection(target);
     if (target === 'scripts') onNavigate('scripts');
@@ -90,7 +93,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Bottom status and CTA */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
+        {/* User Account & Database Sync */}
+        <div className="p-3 rounded-lg bg-paper-raised flex items-center justify-between border border-paper-line/50">
+          {user ? (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-7 h-7 rounded-full bg-forest text-on-forest flex items-center justify-center font-bold text-xs shrink-0">
+                  {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-medium text-ink truncate max-w-[105px]" title={user.email || ''}>
+                    {user.email?.split('@')[0]}
+                  </p>
+                  <span className="text-[10px] text-forest font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
+                    Postgres Synced
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={signOutUser}
+                title="Sign out"
+                className="text-ink-faint hover:text-ink cursor-pointer p-1 rounded hover:bg-paper-sunk transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">logout</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="w-full flex items-center justify-center gap-1.5 py-1 px-2 text-ink text-xs font-medium hover:text-forest transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px] text-forest">cloud_sync</span>
+              <span>Sign in to Sync</span>
+            </button>
+          )}
+        </div>
+
         {/* Mic telemetry pill */}
         <div className="p-3 rounded-lg bg-paper-raised flex items-center justify-between border border-paper-line/50">
           <div className="flex items-center gap-2">

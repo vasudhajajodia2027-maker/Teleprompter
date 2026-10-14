@@ -1,48 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { LicenseStatus } from '../types';
 
 interface PricingViewProps {
   license: LicenseStatus;
-  onActivateKey: (key: string) => boolean;
-  onDeactivateKey: () => void;
+  onStartCheckout: () => void;
+  onDeactivateKey?: () => void;
   onOpenSandbox: () => void;
 }
 
 export const PricingView: React.FC<PricingViewProps> = ({
   license,
-  onActivateKey,
+  onStartCheckout,
   onDeactivateKey,
   onOpenSandbox,
 }) => {
-  const [inputKey, setInputKey] = useState(license.key || '');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState('');
-
-  const handleActivationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputKey.trim()) return;
-
-    setIsVerifying(true);
-    setFeedbackMsg('');
-
-    setTimeout(() => {
-      const success = onActivateKey(inputKey.trim());
-      setIsVerifying(false);
-      if (success) {
-        setFeedbackMsg('License successfully activated! PRO tier unlocked.');
-      } else {
-        setFeedbackMsg('Invalid license key format. Please check your Gumroad receipt.');
-      }
-    }, 700);
-  };
-
-  const handleBuy = () => {
-    const mockKey = `FT-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    setInputKey(mockKey);
-    onActivateKey(mockKey);
-    alert(`Thank you for purchasing First Take ($19, once). License key generated: ${mockKey}. Your copy is now activated on this browser.`);
-  };
-
   return (
     <div className="flex flex-col w-full text-ink">
       <div className="relative w-full overflow-hidden">
@@ -54,7 +25,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
           <div className="max-w-[760px] mx-auto text-center space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-tint text-forest font-label-eyebrow text-xs uppercase tracking-widest font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
-              SIMPLE PRICING
+              INVEST ONCE · RECORD FOREVER
             </div>
 
             <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink tracking-tight font-display">
@@ -62,7 +33,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
             </h1>
 
             <p className="font-lead text-base sm:text-xl text-ink-soft max-w-[620px] mx-auto leading-relaxed">
-              No subscriptions required. Keep your scripts, record unlimited takes, and remove the watermark.
+              No subscriptions required. Keep your scripts, record unlimited takes, and remove all limits.
             </p>
           </div>
 
@@ -73,9 +44,14 @@ export const PricingView: React.FC<PricingViewProps> = ({
 
               <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-paper-line pb-6">
                 <div>
-                  <h3 className="font-headline-lg text-2xl sm:text-3xl font-display text-ink font-semibold">
-                    First Take
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-headline-lg text-2xl sm:text-3xl font-display text-ink font-semibold">
+                      First Take
+                    </h3>
+                    <span className="font-label-meta text-[10px] tracking-widest uppercase bg-forest-tint text-forest px-2.5 py-0.5 rounded font-bold">
+                      ONE-TIME
+                    </span>
+                  </div>
                   <p className="font-body-sm text-sm text-ink-soft mt-1 leading-relaxed">
                     Unlimited scripts, unlimited recording, every future update. No subscription.
                   </p>
@@ -86,36 +62,45 @@ export const PricingView: React.FC<PricingViewProps> = ({
                 </div>
               </div>
 
-              <ul className="space-y-3.5 font-body-sm text-sm text-ink">
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                  <span>Unlimited scripts in your library</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                  <span>Unlimited recording takes</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                  <span>Local camera export</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                  <span>Night paper &amp; optical beam splitter mirror modes</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                  <span>Every future update included</span>
-                </li>
-              </ul>
+              <div className="space-y-2">
+                <span className="font-label-eyebrow text-[11px] tracking-widest uppercase text-ink-faint font-bold">
+                  EVERYTHING INCLUDED
+                </span>
+                <ul className="space-y-3.5 font-body-sm text-sm text-ink pt-1">
+                  <li className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span>Unlimited scripts in your library</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span>Unlimited recording takes</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span>1080p local camera &amp; mic export</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span>Night paper &amp; optical mirror modes</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span>Audio-synced speech pacing</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span>Every future update included</span>
+                  </li>
+                </ul>
+              </div>
 
               <div className="pt-4 space-y-3 text-center">
                 <button
-                  onClick={handleBuy}
-                  className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-body-sm text-base font-semibold hover:bg-forest-dark transition-all duration-150 shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={onStartCheckout}
+                  className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all duration-150 shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{license.isActive ? 'First Take Active' : 'Buy First Take — $19'}</span>
-                  <span className="material-symbols-outlined text-[18px]">bolt</span>
+                  <span>{license.isActive ? 'Active — Yours Forever' : 'Get First Take — $19 (coming soon)'}</span>
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <p className="font-label-meta text-xs text-ink-soft">
                   Try the free demo first, no signup.
@@ -140,101 +125,6 @@ export const PricingView: React.FC<PricingViewProps> = ({
             >
               Open Sandbox →
             </button>
-          </div>
-        </section>
-
-        {/* License Key Section */}
-        <section className="w-full bg-paper-sunk/60 border-t border-b border-paper-line py-16">
-          <div className="max-w-[760px] mx-auto px-6">
-            <div className="p-8 rounded-xl bg-paper-raised border border-paper-line shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-paper-line">
-                <div>
-                  <span className="font-label-eyebrow text-xs uppercase text-forest font-semibold tracking-wider">
-                    License Management
-                  </span>
-                  <h2 className="font-headline-md text-2xl text-ink mt-1 font-display">Already bought on Gumroad?</h2>
-                  <p className="font-body-sm text-sm text-ink-soft mt-1">
-                    Enter your license key below to unlock your studio copy instantly on this device.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-paper-sunk text-ink-soft font-label-meta text-xs shrink-0 border border-paper-line/50">
-                  <span
-                    className={`w-2 h-2 rounded-full ${license.isActive ? 'bg-forest' : 'bg-ink-faint'}`}
-                  ></span>
-                  <span>License Status: {license.isActive ? 'Active' : 'Inactive'}</span>
-                </div>
-              </div>
-
-              <form className="space-y-4" onSubmit={handleActivationSubmit}>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-soft">
-                      <span className="material-symbols-outlined text-[18px]">key</span>
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      value={inputKey}
-                      onChange={(e) => setInputKey(e.target.value)}
-                      placeholder="Paste your Gumroad license key (e.g. 8F2D1A-987B-4E32)..."
-                      className="w-full h-11 pl-10 pr-4 rounded-lg bg-paper-raised text-ink border border-paper-line-strong font-label-meta text-xs placeholder:text-ink-faint focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/20 transition-all"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isVerifying}
-                    className="h-11 px-6 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-semibold hover:bg-forest-dark transition-colors duration-150 shrink-0 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    <span>{isVerifying ? 'Verifying...' : 'Activate key'}</span>
-                    <span className="material-symbols-outlined text-[18px]">
-                      {isVerifying ? 'sync' : 'check'}
-                    </span>
-                  </button>
-                </div>
-
-                {feedbackMsg && (
-                  <p className="font-body-sm text-xs text-forest font-medium">{feedbackMsg}</p>
-                )}
-
-                <p className="font-label-meta text-[11px] text-ink-faint">
-                  Can't find your key? Check your Gumroad receipt email or search for "First Take Studio License".
-                </p>
-              </form>
-
-              {/* Activated Success Status Box */}
-              {license.isActive && (
-                <div className="p-4 rounded-lg bg-forest-tint border-l-4 border-forest flex items-start gap-3.5 transition-all duration-300">
-                  <span className="material-symbols-outlined text-forest text-[22px] shrink-0 mt-0.5">verified</span>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-title-md text-sm sm:text-base font-semibold text-ink">
-                        First Take License Active
-                      </h4>
-                      <span className="px-2 py-0.5 rounded bg-white/70 text-forest font-label-meta text-[10px] font-bold uppercase">
-                        PRO TIER
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-xs text-ink-soft leading-relaxed">
-                      All capabilities enabled: unlimited scripts, mirror teleprompter, and local offline retention.
-                    </p>
-                    <div className="pt-2 flex flex-wrap items-center gap-3 font-label-meta text-xs text-forest">
-                      <span>Seat: Solo Founder</span>
-                      <span>•</span>
-                      <span>Type: One-time License</span>
-                      <span>•</span>
-                      <button
-                        onClick={onDeactivateKey}
-                        className="underline cursor-pointer hover:text-forest-dark"
-                      >
-                        Deactivate on this machine
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </section>
 
@@ -289,7 +179,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   <span className="font-label-meta text-xs text-ink-faint">Privacy</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  Exclusively on your local disk inside your browser’s IndexedDB. We do not maintain any cloud databases or video servers.
+                  Exclusively on your local disk inside your browser’s IndexedDB. We do not maintain any video servers or upload your takes.
                 </p>
               </div>
 
@@ -297,12 +187,12 @@ export const PricingView: React.FC<PricingViewProps> = ({
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
                     <span className="material-symbols-outlined text-forest text-[20px]">sync_alt</span>
-                    Can I use my license across multiple computers?
+                    Can I use First Take across multiple devices?
                   </h3>
                   <span className="font-label-meta text-xs text-ink-faint">Licensing</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  Yes. You are licensed to unlock First Take on all your personal computers using the same license key.
+                  Yes. Your purchase link unlocks First Take across all your personal devices without monthly subscription fees.
                 </p>
               </div>
             </div>
