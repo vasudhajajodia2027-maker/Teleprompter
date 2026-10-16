@@ -909,7 +909,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         }
       } else {
         setUseLiveWebcam(false);
-        setCameraError('Camera unavailable. Audio microphone recording is ready.');
+        setCameraError('Camera not available. You can still record audio.');
       }
     } catch (err: any) {
       console.warn('Webcam getUserMedia error:', err);
@@ -917,10 +917,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         webcamStreamRef.current = audioStream;
         setUseLiveWebcam(false);
-        setCameraError('Camera unavailable. Audio microphone recording is ready.');
+        setCameraError('Camera not available. You can still record audio.');
       } catch (audioErr) {
         setUseLiveWebcam(false);
-        setCameraError('Microphone and camera permissions were denied. Prompter can still roll without recording.');
+        setCameraError('Camera and microphone are blocked. You can still use the prompter, but you can’t record.');
       }
     }
   };
@@ -977,9 +977,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           stream = audioStream;
           webcamStreamRef.current = audioStream;
           setUseLiveWebcam(false);
-          setCameraError('Camera unavailable. Recording audio only.');
+          setCameraError('Camera not available. Recording audio only.');
         } catch (audioErr) {
-          setCameraError('Microphone permission blocked. Cannot record.');
+          setCameraError('Your microphone is blocked, so recording can’t start.');
           return;
         }
       }
@@ -994,7 +994,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
 
     if (!stream || typeof MediaRecorder === 'undefined') {
-      setCameraError('Media recording is not supported or microphone was blocked.');
+      setCameraError('This browser can’t record video, or the microphone is blocked.');
       return;
     }
 
@@ -1201,11 +1201,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const hasUnsavedTakes = takes.some((t) => !t.isDownloaded);
 
     if (hasUnsavedTakes) {
-      if (!confirm('You have unsaved takes. Exit anyway?')) {
+      if (!confirm('Some takes aren’t downloaded yet and will be lost. Leave anyway?')) {
         return;
       }
     } else {
-      if (!confirm('Leave Prompter Studio?')) {
+      if (!confirm('Leave the prompter?')) {
         return;
       }
     }
@@ -1232,19 +1232,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {countdown !== null && (
         <div className="fixed inset-0 z-60 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center animate-fadeIn text-center">
           <span className="font-label-eyebrow text-sm uppercase tracking-widest text-primary-fixed mb-4 font-bold">
-            GET READY TO SPEAK
+            GET READY
           </span>
           <div className="font-headline-lg font-display text-8xl sm:text-9xl text-white font-bold animate-pulse">
             {countdown}
           </div>
           <p className="mt-6 text-sm text-white/70 font-body-sm">
-            Focus eyes on lens • Prompter begins automatically
+            Look at the lens. The script starts after the countdown.
           </p>
           <button
             onClick={cancelCountdown}
             className="mt-6 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs cursor-pointer"
           >
-            Cancel Countdown (Esc)
+            Cancel (Esc)
           </button>
         </div>
       )}
@@ -1273,7 +1273,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <button
                   onClick={() => window.open(window.location.href, '_blank')}
                   className="px-2.5 py-1 rounded bg-paper-raised hover:bg-white text-ink font-semibold font-body-sm text-[11px] border border-paper-line shadow-2xs cursor-pointer flex items-center gap-1"
-                  title="Open in new browser tab for full microphone permissions"
+                  title="Open the prompter in a new tab, where the browser can ask for the microphone"
                 >
                   <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                   <span>Open in new tab</span>
@@ -1359,7 +1359,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   ? 'bg-[#2A2724] border-[#3A3631] text-[#FAF7F0]'
                   : 'bg-paper-raised border-paper-line text-ink'
               }`}
-              title="Speech recognition accent/language"
+              title="The language you'll speak"
             >
               <option value="en-IN">English (India) · en-IN</option>
               <option value="en-US">English (US) · en-US</option>
@@ -1465,7 +1465,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 ? 'border-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0] hover:bg-[#2A2724]'
                 : 'border-paper-line text-ink-soft hover:text-ink hover:bg-paper-sunk'
             }`}
-            title="Exit studio view (Esc)"
+            title="Leave the prompter (Esc)"
           >
             <span className="material-symbols-outlined text-[17px]">close</span>
             <span className="hidden sm:inline">Exit</span>
@@ -1511,7 +1511,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           <button
             onClick={toggleWebcam}
             className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-night-paper/80 text-white font-label-meta text-[10px] hover:bg-night-paper transition-colors flex items-center gap-1 cursor-pointer border border-white/20 z-20"
-            title={useLiveWebcam ? 'Turn off live camera' : 'Enable local webcam'}
+            title={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
           >
             <span className="material-symbols-outlined text-[13px]">
               {useLiveWebcam ? 'videocam_off' : 'videocam'}
@@ -1676,7 +1676,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                       <span>
                         {scrollMode === 'voice'
                           ? isSpeaking
-                            ? 'Speaking (Scrolling)...'
+                            ? 'Speaking'
                             : micBlocked
                             ? 'Mic blocked'
                             : isPaused
@@ -1735,7 +1735,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   ? 'bg-rec hover:bg-rec/90 text-white animate-pulse'
                   : 'bg-rec hover:bg-rec/90 text-white'
               }`}
-              title={isRecording ? 'Stop take & save (R)' : 'Start countdown & record (R)'}
+              title={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
             >
               <span className="material-symbols-outlined text-[24px]">
                 {isRecording ? 'stop' : 'radio_button_checked'}
@@ -1751,7 +1751,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   ? 'bg-[#3A3631] hover:bg-[#4A453F] text-[#FAF7F0] border-transparent'
                   : 'bg-paper-sunk hover:bg-paper-line text-ink border-paper-line/50'
               }`}
-              title="Spacebar to toggle scroll"
+              title="Start or pause (Space)"
             >
               <span className="material-symbols-outlined text-[20px]">
                 {isPaused ? 'play_arrow' : 'pause'}
@@ -1812,7 +1812,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               value={baseWpm}
               onChange={(e) => setBaseWpm(parseInt(e.target.value, 10))}
               className="w-full h-1.5 bg-paper-sunk rounded-lg appearance-none cursor-pointer accent-forest"
-              title="Fine WPM pace adjuster (Arrow Up/Down)"
+              title="Scroll speed (↑ / ↓)"
             />
           </div>
           </>
@@ -1853,7 +1853,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   ? 'bg-marker text-ink'
                   : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
               }`}
-              title="Toggle Night Paper contrast"
+              title="Dark background"
             >
               <span className="material-symbols-outlined text-[20px]">
                 {isNightMode ? 'light_mode' : 'dark_mode'}
@@ -1867,7 +1867,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   ? 'bg-forest text-on-forest'
                   : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
               }`}
-              title="Mirror text horizontally (M) for beam-splitter glass"
+              title="Mirror text for teleprompter glass (M)"
             >
               <span className="material-symbols-outlined text-[20px]">flip</span>
             </button>
@@ -1886,7 +1886,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-forest text-[22px]">video_library</span>
                 <h3 className="font-headline-sm text-lg font-semibold text-ink">
-                  Recorded Takes ({takes.length})
+                  Recorded takes ({takes.length})
                 </h3>
               </div>
               <button
@@ -1913,7 +1913,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-ink">Take 0{take.takeNumber}</span>
+                        <span className="font-bold text-ink">Take {take.takeNumber}</span>
                         {take.isDownloaded ? (
                           <span className="px-2 py-0.5 rounded bg-forest-tint text-forest font-label-meta text-[10px] font-bold">
                             Saved
@@ -1942,7 +1942,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                       <button
                         onClick={() => handleDownloadTake(take)}
                         className="p-2 rounded-lg bg-forest text-on-forest hover:bg-forest-dark font-body-sm text-xs cursor-pointer flex items-center gap-1 shadow-2xs"
-                        title="Download video to computer"
+                        title="Download the video"
                       >
                         <span className="material-symbols-outlined text-[16px]">download</span>
                         <span>Save</span>
@@ -1963,7 +1963,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
             <div className="pt-3 border-t border-paper-line flex items-center justify-between">
               <span className="font-label-meta text-[11px] text-ink-faint">
-                Takes stay in your local browser only.
+                Takes stay in this browser until you download them, and are lost when you leave the prompter.
               </span>
               <button
                 onClick={() => setShowTakesModal(false)}
@@ -1984,7 +1984,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           <div className="bg-paper-raised rounded-2xl max-w-2xl w-full p-6 border border-paper-line shadow-2xl space-y-4 animate-scaleIn">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-ink">Take 0{previewTake.takeNumber} Playback</span>
+                <span className="font-bold text-ink">Take {previewTake.takeNumber}</span>
                 <span className="font-label-meta text-xs text-ink-soft">
                   ({formatTime(previewTake.durationSec)})
                 </span>
@@ -2012,7 +2012,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 className="text-rec text-xs font-medium hover:underline cursor-pointer flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-[16px]">delete</span>
-                <span>Delete Take</span>
+                <span>Delete take</span>
               </button>
 
               <div className="flex items-center gap-3">
@@ -2021,7 +2021,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   className="px-4 py-2 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
-                  <span>Download Take</span>
+                  <span>Download take</span>
                 </button>
                 <button
                   onClick={() => {
@@ -2082,7 +2082,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">V</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Mirror text (for glass rigs)</span>
+                <span className="text-ink-soft">Mirror text for teleprompter glass</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">M</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
@@ -2094,7 +2094,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">+ / -</kbd>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="text-ink-soft">Exit Prompter Studio</span>
+                <span className="text-ink-soft">Leave the prompter</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Esc</kbd>
               </div>
             </div>

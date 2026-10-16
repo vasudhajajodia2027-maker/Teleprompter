@@ -21,7 +21,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const [title, setTitle] = useState(script.title);
   const [content, setContent] = useState(script.content);
   const [pacingWpm, setPacingWpm] = useState(script.pacingWpm || 150);
-  const [saveStatus, setSaveStatus] = useState('Saved locally just now');
+  const [saveStatus, setSaveStatus] = useState('Saved just now');
   const [showProTip, setShowProTip] = useState(true);
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -42,7 +42,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   }, [script.id]);
 
   const triggerUpdate = (newTitle: string, newContent: string, newWpm: number) => {
-    setSaveStatus('Saving changes...');
+    setSaveStatus('Saving…');
     const updatedWords = newContent.trim() ? newContent.trim().split(/\s+/).filter(Boolean).length : 0;
     const s = Math.round((updatedWords / newWpm) * 60);
     const m = Math.floor(s / 60);
@@ -60,7 +60,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     });
 
     setTimeout(() => {
-      setSaveStatus('Saved locally just now');
+      setSaveStatus('Saved just now');
     }, 400);
   };
 
@@ -111,7 +111,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   };
 
   const handleClear = () => {
-    if (confirm('Are you sure you want to clear this manuscript draft?')) {
+    if (confirm('Clear the whole script? This can’t be undone.')) {
       setContent('');
       triggerUpdate(title, '', pacingWpm);
     }
@@ -182,7 +182,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
           {/* Primary Control Action */}
           <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
             <button
-              onClick={() => alert(`Target Pace: ${pacingWpm} WPM. Estimated read time is ${formattedReadTime} for ${words} words.`)}
+              onClick={() => alert(`${words} words at ${pacingWpm} words per minute takes about ${formattedReadTime} to read.`)}
               className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-paper-raised text-ink font-body-sm text-sm hover:bg-paper-sunk transition-colors border border-paper-line cursor-pointer"
               type="button"
             >
@@ -210,7 +210,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 <button
                   onClick={() => insertSyntax('[PAUSE 2s]')}
                   className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Insert 2-second pacing pause cue"
+                  title="Insert a [PAUSE 2s] note"
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[15px] text-tertiary">timer</span>
@@ -219,7 +219,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 <button
                   onClick={() => insertSyntax('[CAMERA LOOK]')}
                   className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Insert camera gaze alignment cue"
+                  title="Insert a [CAMERA LOOK] note"
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[15px] text-primary">visibility</span>
@@ -228,7 +228,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 <button
                   onClick={() => insertSyntax('*emphasis*')}
                   className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Mark stressed vocal accent"
+                  title="Insert *emphasis* to mark a word to stress (shown with the asterisks)"
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[15px] text-ink-soft">format_italic</span>
@@ -255,7 +255,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 <button
                   onClick={handleClear}
                   className="px-2 py-1.5 rounded hover:bg-paper-sunk text-ink-soft hover:text-ink font-label-meta text-xs transition-colors cursor-pointer"
-                  title="Clear canvas"
+                  title="Clear the whole script"
                   type="button"
                 >
                   Clear
@@ -289,7 +289,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   value={content}
                   onChange={handleContentChange}
                   className="w-full bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading min-h-[460px]"
-                  placeholder="Type or paste your script draft here..."
+                  placeholder="Type or paste your script here"
                   spellCheck="true"
                 />
               </div>
@@ -379,7 +379,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   <span className="material-symbols-outlined text-[18px] text-ink-soft">content_copy</span>
                   Duplicate script
                 </span>
-                <span className="font-label-meta text-[11px] text-ink-faint">Cmd+D</span>
+                
               </button>
 
               <button
@@ -389,7 +389,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
               >
                 <span className="flex items-center gap-2.5">
                   <span className="material-symbols-outlined text-[18px] text-ink-soft">file_download</span>
-                  Export as Plain Text (.txt)
+                  Download as a .txt file
                 </span>
                 <span className="material-symbols-outlined text-[16px] text-ink-faint">download</span>
               </button>
@@ -411,7 +411,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             {/* Quick Hardware Specs Card */}
             <div className="px-3 py-2 flex items-center justify-between font-label-meta text-xs text-ink-faint">
               <span>Script ID: {script.id}</span>
-              <span>UTF-8 · Plain Draft</span>
+              <span>Plain text</span>
             </div>
           </aside>
         </div>

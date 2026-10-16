@@ -42,7 +42,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
         </h1>
 
         <p className="font-body-md text-base sm:text-lg text-ink-soft leading-relaxed max-w-2xl">
-          Clear, honest, and straightforward terms for using First Take Studio. No hidden fine print or recurring entrapment.
+          The terms for using First Take Studio. The main points are below.
         </p>
       </header>
 
@@ -55,15 +55,15 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
         <ul className="space-y-2 font-body-sm text-sm text-ink-soft leading-relaxed">
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>You Own 100% of Your Content:</strong> All scripts, video recordings, audio takes, and intellectual property remain entirely yours.</span>
+            <span><strong>You own your content:</strong> All scripts, video recordings, audio takes, and intellectual property remain entirely yours.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>No Recurring Fees:</strong> First Take is architected as a free demo and an upcoming $19 one-time lifetime license.</span>
+            <span><strong>No recurring fees:</strong> There is a free demo now, and a $19 one-time license is planned.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>14-Day Money-Back Guarantee:</strong> Once paid checkout opens, every purchase includes a full 14-day refund window.</span>
+            <span><strong>14-day money-back guarantee:</strong> Once paid checkout opens, every purchase includes a full 14-day refund window.</span>
           </li>
         </ul>
       </div>
@@ -102,7 +102,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
                 A. The Free Demo
               </h3>
               <p>
-                We provide a free demo version of First Take Studio that requires no account, credit card, or payment information. In the free demo, you can experience the speech-responsive teleprompter and create scripts. Data in the free demo is stored solely within your local browser storage.
+                We provide a free demo version of First Take Studio that requires no account, credit card, or payment information. In the free demo, you can use the speech-responsive teleprompter and create scripts. Data in the free demo is stored solely within your local browser storage.
               </p>
             </div>
 
@@ -120,7 +120,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
                 C. Current Waitlist Status
               </h3>
               <p>
-                <strong>Checkout is not live yet.</strong> Submitting your email on our checkout page joins our priority waitlist. There is zero charge today, and no payment method is collected or billed. We will notify waitlist members by email as soon as checkout becomes active.
+                <strong>Checkout is not live yet.</strong> Submitting your email on our checkout page joins the waitlist. You are not charged, and no payment method is collected. We will notify waitlist members by email as soon as checkout becomes active.
               </p>
             </div>
 

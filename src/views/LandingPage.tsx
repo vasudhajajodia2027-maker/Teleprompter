@@ -25,17 +25,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
   const demoLines = [
     {
-      text: "Most prompters force you to chase a mechanical wheel.",
+      text: "Most prompters scroll at a fixed speed, so you have to keep up.",
     },
     {
-      text: "First Take waits until you utter the phrase, keeping your natural pause alive.",
-      highlight: "you utter the phrase",
+      text: "First Take waits until you say the words, so you can pause when you need to.",
+      highlight: "you say the words",
     },
     {
-      text: "You look directly through the lens, breathing between sentences without panicking about speed adjustments.",
+      text: "You look into the lens and breathe between sentences, with no speed setting to manage.",
     },
     {
-      text: "When you stop speaking, the prompt stops scrolling. Simple as that.",
+      text: "When you stop speaking, the script stops scrolling.",
     },
   ];
 
@@ -185,9 +185,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <>
                               First Take waits until{' '}
                               <mark className="bg-marker px-1.5 py-0.5 rounded-none font-medium">
-                                you utter the phrase
+                                you say the words
                               </mark>
-                              , keeping your natural pause alive.
+                              , so you can pause when you need to.
                             </>
                           ) : (
                             line.text
@@ -232,7 +232,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               {/* Prompt Controls Underlay Bar */}
               <div className="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-ink-soft border-t border-paper-line/50 text-xs font-label-meta gap-2">
                 <div className="flex items-center gap-3">
-                  <span>AUTO-SCROLL: SENSITIVE TO NATURAL PAUSES</span>
+                  <span>SCRIPT WAITS WHEN YOU PAUSE</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-forest"></span>
@@ -248,13 +248,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <section className="px-6 lg:px-12 py-20 max-w-7xl mx-auto w-full border-t border-paper-line">
         <div className="max-w-2xl mx-auto text-center mb-16 space-y-3">
           <span className="font-label-eyebrow text-xs text-forest uppercase tracking-widest font-semibold">
-            WHY TRADITIONAL PROMPTERS FAIL
+            THE PROBLEM WITH FIXED-SPEED PROMPTERS
           </span>
           <h2 className="font-headline-lg text-3xl sm:text-4xl text-ink font-display">
             Fixed-speed prompters don't wait for you.
           </h2>
           <p className="font-body-md text-base text-ink-soft">
-            Traditional prompters roll forward at an arbitrary words-per-minute rate. If you stumble or pause to think, your flow breaks completely.
+            Most prompters scroll at a set number of words per minute. If you stumble or stop to think, the text keeps moving and you lose your place.
           </p>
         </div>
 
@@ -264,33 +264,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-rec-tint text-rec font-label-meta text-xs font-semibold">
                 <span className="material-symbols-outlined text-[16px]">close</span>
-                Old way
+                Fixed-speed prompter
               </div>
-              <h3 className="font-headline-sm text-xl font-semibold text-ink">You work for the machine.</h3>
+              <h3 className="font-headline-sm text-xl font-semibold text-ink">The text sets the pace.</h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                    Fixed scrolling forces a dead-eyed, robotically measured cadence without room for dramatic pauses.
+                    You read at the prompter's speed, with no room to pause for effect.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                    Foot pedals and Bluetooth clickers occupy your hands, taking mental bandwidth away from your delivery.
+                    Changing the speed takes a foot pedal or a handheld clicker, which pulls your attention away from what you're saying.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                    Cloud recording tools upload your takes to third-party servers.
+                    Many online recorders upload your takes to their servers.
                   </p>
                 </li>
               </ul>
             </div>
             <div className="mt-8 pt-6">
               <div className="p-4 rounded-lg bg-paper-raised text-ink-soft font-label-meta text-xs border border-paper-line/50">
-                Result: 8 to 12 exhausted takes per video, edited frantically in post.
+                Result: more retakes, and more editing afterwards.
               </div>
             </div>
           </div>
@@ -302,18 +302,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span className="material-symbols-outlined text-[16px]">check</span>
                 First Take
               </div>
-              <h3 className="font-headline-sm text-xl font-semibold text-ink">The machine listens to you.</h3>
+              <h3 className="font-headline-sm text-xl font-semibold text-ink">Your voice sets the pace.</h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
-                    Your microphone tracks which words you have said. The highlight stays anchored on your actual voice.
+                    The app listens through your microphone and highlights the word you're on.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
-                    Pause to take a sip of water, cough, or improvise an anecdote—the script waits right where you left off.
+                    If you pause, cough, or go off script, the text waits where you left off.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
@@ -326,7 +326,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             </div>
             <div className="mt-8 pt-6">
               <div className="p-4 rounded-lg bg-marker-soft text-ink font-label-meta text-xs border border-marker-border/40">
-                Result: A confident, natural delivery in fewer takes.
+                Result: you read at your own pace and pause when you need to.
               </div>
             </div>
           </div>
@@ -339,14 +339,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
             <div className="space-y-2">
               <span className="font-label-eyebrow text-xs text-forest uppercase tracking-widest font-semibold">
-                EFFORTLESS OPERATION
+                HOW IT WORKS
               </span>
               <h2 className="font-headline-lg text-3xl sm:text-4xl text-ink font-display">
-                Three steps to your cleanest delivery.
+                Three steps from script to video.
               </h2>
             </div>
             <p className="font-body-md text-base text-ink-soft max-w-md leading-relaxed">
-              Designed with the quiet discipline of typewriter stationery—no clutter, no setup wizards.
+              Try it without an account or any setup.
             </p>
           </div>
 
@@ -357,7 +357,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span className="font-label-meta text-[32px] font-bold text-ink-faint">01</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Paste your script</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
-                  Drop plain text, Markdown, or speaker cues directly into the paper desk. Formatting automatically adjusts to high-legibility serif text.
+                  Paste your script, or import a .txt or .md file. The prompter shows it in a large serif font. Notes to yourself in [brackets] stay on screen, and you don't have to read them aloud.
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-paper-sunk font-label-meta text-xs text-ink-soft flex items-center justify-between border border-paper-line/50">
@@ -372,7 +372,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span className="font-label-meta text-[32px] font-bold text-forest">02</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Press record &amp; speak</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
-                  Click the red capture shutter. As you talk, the script recognizes your words and moves the bright yellow marker forward with you.
+                  Click the red record button. After a 3-second countdown, recording starts, and the highlight moves forward as you say each word.
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-marker-soft font-label-meta text-xs text-ink flex items-center justify-between border border-marker-border/40">
@@ -387,11 +387,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span className="font-label-meta text-[32px] font-bold text-ink-faint">03</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Download your take</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
-                  Hit stop to instantly receive an MP4 or WebM video file. No rendering queues, watermarks, or wait times.
+                  Click stop to watch the take, then download it as a video file: WebM in Chrome and Edge, MP4 in Safari. There's no watermark.
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-paper-sunk font-label-meta text-xs text-ink-soft flex items-center justify-between border border-paper-line/50">
-                <span>Direct to Downloads folder</span>
+                <span>Saves to your Downloads folder</span>
                 <span className="material-symbols-outlined text-[18px]">download</span>
               </div>
             </div>
@@ -404,10 +404,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="max-w-xl mx-auto space-y-8">
           <div className="text-center space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-tint text-forest font-label-eyebrow text-xs uppercase tracking-widest font-semibold">
-              Simple pricing
+              Pricing
             </div>
             <h2 className="font-headline-lg text-3xl sm:text-4xl text-ink font-display">
-              Record with genuine, unhurried presence.
+              One price, paid once.
             </h2>
           </div>
 
@@ -441,11 +441,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </li>
               <li className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                <span>Local camera export</span>
+                <span>Record with your camera and download the video</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                <span>Night paper &amp; optical beam splitter mirror modes</span>
+                <span>Dark background, and mirrored text for teleprompter glass</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
@@ -458,11 +458,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 onClick={handleBuy}
                 className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Get First Take — $19 (coming soon)</span>
+                <span>Join the waitlist ($19 at launch)</span>
                 <span className="material-symbols-outlined text-[18px]">bolt</span>
               </button>
               <p className="font-label-meta text-xs text-ink-soft">
-                Try the free demo first, no signup.
+                Try the free demo first. No sign-up needed.
               </p>
             </div>
           </div>

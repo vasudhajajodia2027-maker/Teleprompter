@@ -25,15 +25,15 @@ export const PricingView: React.FC<PricingViewProps> = ({
           <div className="max-w-[760px] mx-auto text-center space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-tint text-forest font-label-eyebrow text-xs uppercase tracking-widest font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
-              INVEST ONCE · RECORD FOREVER
+              ONE-TIME PURCHASE
             </div>
 
             <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink tracking-tight font-display">
-              Simple pricing for founders.
+              One-time pricing.
             </h1>
 
             <p className="font-lead text-base sm:text-xl text-ink-soft max-w-[620px] mx-auto leading-relaxed">
-              No subscriptions required. Keep your scripts, record unlimited takes, and remove all limits.
+              Pay once and keep it. No subscription.
             </p>
           </div>
 
@@ -81,7 +81,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                    <span>Night paper &amp; optical mirror modes</span>
+                    <span>Dark background, and mirrored text for teleprompter glass</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
@@ -99,11 +99,11 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   onClick={onStartCheckout}
                   className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all duration-150 shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{license.isActive ? 'Active — Yours Forever' : 'Get First Take — $19 (coming soon)'}</span>
+                  <span>{license.isActive ? 'Active: yours to keep' : 'Join the waitlist ($19 at launch)'}</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <p className="font-label-meta text-xs text-ink-soft">
-                  Try the free demo first, no signup.
+                  Try the free demo first. No sign-up needed.
                 </p>
               </div>
             </div>
@@ -116,14 +116,14 @@ export const PricingView: React.FC<PricingViewProps> = ({
                 <span className="material-symbols-outlined text-[18px] text-ink-soft">edit_note</span>
               </span>
               <p className="font-body-sm text-sm text-ink-soft">
-                Test the browser prompter sandbox with your pitch script.
+                Try the prompter with your own script, free.
               </p>
             </div>
             <button
               onClick={onOpenSandbox}
               className="font-body-sm text-sm text-forest font-semibold hover:underline shrink-0 cursor-pointer"
             >
-              Open Sandbox →
+              Open your scripts →
             </button>
           </div>
         </section>
@@ -132,13 +132,13 @@ export const PricingView: React.FC<PricingViewProps> = ({
         <section className="max-w-[880px] mx-auto px-6 py-20 w-full space-y-10">
           <div className="text-center space-y-2">
             <span className="font-label-eyebrow text-xs uppercase text-ink-soft tracking-wider font-semibold">
-              Specifications &amp; Clarity
+              Before you buy
             </span>
             <h2 className="font-headline-md text-2xl sm:text-3xl text-ink font-display">
-              Frequently Asked Questions
+              Frequently asked questions
             </h2>
             <p className="font-body-sm text-sm text-ink-soft">
-              Everything you need to know about the local recording engine.
+              Browsers, video files, and where your data is stored.
             </p>
           </div>
 
@@ -161,12 +161,12 @@ export const PricingView: React.FC<PricingViewProps> = ({
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
                     <span className="material-symbols-outlined text-forest text-[20px]">videocam</span>
-                    What video formats and resolutions can I export?
+                    What video format do I get?
                   </h3>
                   <span className="font-label-meta text-xs text-ink-faint">Formats</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  Takes are recorded in your browser as standard <strong>.WebM</strong> (Chrome, Edge, Firefox) or <strong>.MP4</strong> (Safari) video files. Files are directly saved to your computer’s Downloads folder.
+                  Takes are recorded in your browser as standard <strong>.WebM</strong> (Chrome, Edge, Firefox) or <strong>.MP4</strong> (Safari) video files. Downloads go to your computer’s Downloads folder.
                 </p>
               </div>
 
@@ -192,7 +192,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   <span className="font-label-meta text-xs text-ink-faint">Licensing</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  Yes. Your purchase link unlocks First Take across all your personal devices without monthly subscription fees.
+                  Yes. Your purchase link unlocks First Take on all your personal devices, with no monthly fee.
                 </p>
               </div>
             </div>

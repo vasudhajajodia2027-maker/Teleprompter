@@ -23,7 +23,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
         </button>
 
         <span className="font-label-meta text-xs text-ink-faint">
-          Effective: 15 October 2026
+          Effective: 16 October 2026
         </span>
       </div>
 
@@ -42,7 +42,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
         </h1>
 
         <p className="font-body-md text-base sm:text-lg text-ink-soft leading-relaxed max-w-2xl">
-          We designed First Take Studio around a simple, unbreakable premise: your voice, your face, and your creative recordings belong entirely to you on your device.
+          Your video recordings stay on your device. This policy explains what First Take Studio collects, why, and who else handles it.
         </p>
       </header>
 
@@ -55,15 +55,15 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
         <ul className="space-y-2 font-body-sm text-sm text-ink-soft leading-relaxed">
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>Zero Audio or Video Uploads:</strong> Camera and microphone streams are processed 100% locally in your browser memory. Recordings never touch our servers.</span>
+            <span><strong>Videos stay on your device:</strong> Recordings are made in your browser and never sent to our servers. To follow your voice, your browser’s speech recognition may send microphone audio to the browser maker (Google, in Chrome).</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>Free Demo:</strong> Requires no account. All sample scripts stay exclusively in your browser&apos;s local storage.</span>
+            <span><strong>Free demo:</strong> No account needed. Scripts you create without signing in stay in your browser&apos;s local storage.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>No Ad Tracking or Data Selling:</strong> We never sell your personal information or use your data for targeted advertising.</span>
+            <span><strong>No ad tracking or data selling:</strong> We never sell your personal information or use your data for targeted advertising.</span>
           </li>
         </ul>
       </div>
@@ -80,7 +80,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              First Take Studio (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) provides a speech-responsive teleprompter application accessible via the web. Our mission is to help founders, educators, and creators deliver presentations with natural, unhurried presence.
+              First Take Studio (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) provides a speech-responsive teleprompter application accessible via the web. It is made for founders, educators and creators who record talks and videos.
             </p>
             <p>
               For any questions regarding this policy or your personal data, you can reach our operator directly at{' '}
@@ -126,16 +126,19 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
                 C. User Scripts &amp; Notes
               </h3>
               <p>
-                When signed in, scripts you create or edit in your library are saved to your secure cloud database account so you can access them across sessions. If you are signed out or using the free demo, all scripts remain strictly inside your browser&apos;s local storage (<code className="px-1.5 py-0.5 rounded bg-paper-sunk font-label-meta text-xs text-ink">localStorage</code>) and are never transmitted to any server.
+                When signed in, scripts you create or edit in your library are saved to your account in our database (run by Supabase) so you can open them on other devices. If you are signed out or using the free demo, all scripts remain strictly inside your browser&apos;s local storage (<code className="px-1.5 py-0.5 rounded bg-paper-sunk font-label-meta text-xs text-ink">localStorage</code>) and are never transmitted to any server.
               </p>
             </div>
 
             <div className="pt-2 border-t border-paper-line/50">
               <h3 className="font-title-md font-semibold text-ink text-base mb-1">
-                D. Camera &amp; Microphone Streams (Processed 100% Locally)
+                D. Camera &amp; Microphone
               </h3>
               <p>
-                When you use the teleprompter with speech follow or video preview, your camera and microphone audio are captured and processed purely in local browser memory using the Web Speech API and MediaStream API. <strong>Your camera video and microphone audio are never recorded by us, never transmitted over the network, and never stored on our servers.</strong> Video exports are rendered locally in your browser and downloaded directly to your computer.
+                When you use the teleprompter, your browser captures your camera and microphone. Video recordings are made in your browser and download straight to your computer. <strong>We never receive or store your camera video or microphone audio.</strong>
+              </p>
+              <p>
+                To follow your voice, the teleprompter uses your browser&apos;s built-in speech recognition. Some browsers, including Google Chrome, send that microphone audio to their own speech service to turn it into words. That processing is covered by your browser maker&apos;s privacy policy, not ours. To avoid it, press V in the prompter to switch to steady auto-scroll, which does not use speech recognition.
               </p>
             </div>
           </div>
@@ -151,14 +154,17 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              We rely on trusted third-party infrastructure providers to run First Take Studio:
+              First Take Studio uses these third-party services:
             </p>
             <ul className="space-y-2 list-disc list-inside pl-2">
               <li>
-                <strong className="text-ink">Supabase:</strong> Provides our managed PostgreSQL database and authentication infrastructure. User accounts and synced scripts are stored securely with Row Level Security (RLS) enabled.
+                <strong className="text-ink">Supabase:</strong> Stores user accounts and synced scripts, and handles sign-in. Each account can only read its own scripts.
               </li>
               <li>
-                <strong className="text-ink">Google Identity Services:</strong> Provides secure single sign-on (OAuth) when you choose to log in with your Google account.
+                <strong className="text-ink">Google Identity Services:</strong> Lets you sign in with your Google account.
+              </li>
+              <li>
+                <strong className="text-ink">Your browser&apos;s speech service:</strong> When voice follow is on, browsers such as Google Chrome send microphone audio to their own speech service to recognize words. We do not receive this audio.
               </li>
             </ul>
             <p>

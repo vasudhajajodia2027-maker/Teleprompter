@@ -270,7 +270,7 @@ export default function App() {
       updatedAt: 'Just now',
       wordCount: 0,
       estimatedReadTime: '0s',
-      content: 'Write or paste your script text here...\n\n[PAUSE 2s]\n\nDeliver with steady presence.',
+      content: 'Write or paste your script here.\n\n[PAUSE 2s]\n\nText in brackets is a note to yourself. You don\'t read it aloud.',
     };
     setScripts((prev) => [newScript, ...prev]);
     setSelectedScriptId(newId);

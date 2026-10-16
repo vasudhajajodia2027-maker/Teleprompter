@@ -46,12 +46,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               onClick={() => setShowShortcutsModal(true)}
               className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
             >
-              Keyboard Shortcuts
+              Keyboard shortcuts
             </button>
           </div>
 
           <p className="font-label-meta text-xs text-ink-faint">
-            © 2026 First Take Studio · Crafted for natural speaking rhythm.
+            © 2026 First Take Studio
           </p>
         </div>
       </footer>
@@ -60,7 +60,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-paper-raised rounded-xl max-w-md w-full p-6 shadow-2xl border border-paper-line">
             <div className="flex items-center justify-between pb-4 border-b border-paper-line">
-              <h3 className="font-headline-sm text-lg font-semibold text-ink">Keyboard Shortcuts</h3>
+              <h3 className="font-headline-sm text-lg font-semibold text-ink">Keyboard shortcuts</h3>
               <button 
                 onClick={() => setShowShortcutsModal(false)}
                 className="text-ink-soft hover:text-ink p-1 cursor-pointer"
@@ -70,24 +70,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </div>
             <div className="py-4 space-y-3 font-body-sm text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Pause / Resume Teleprompter</span>
+                <span className="text-ink-soft">Start or pause</span>
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">Space</kbd>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Stop &amp; Finish Recording Take</span>
+                <span className="text-ink-soft">Start or stop recording</span>
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">R</kbd>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Exit Studio Window</span>
+                <span className="text-ink-soft">Start over from the first line</span>
+                <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">Home</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-ink-soft">Leave the prompter</span>
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">Esc</kbd>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Duplicate Script</span>
-                <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">Cmd + D</kbd>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Jump to Line</span>
-                <span className="font-label-meta text-xs text-ink-faint">Click any line</span>
+                <span className="text-ink-soft">Jump to a line</span>
+                <span className="font-label-meta text-xs text-ink-faint">Click the line</span>
               </div>
             </div>
             <div className="pt-3 border-t border-paper-line text-right">

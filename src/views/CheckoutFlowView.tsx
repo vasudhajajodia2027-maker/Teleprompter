@@ -102,14 +102,13 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             {/* Header copy */}
             <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-tint text-forest font-label-eyebrow text-xs uppercase tracking-widest font-bold">
-                INVEST ONCE · RECORD FOREVER
+                ONE-TIME PURCHASE · $19
               </div>
               <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
-                Record with{' '}
+                Join the{' '}
                 <mark className="bg-marker text-on-marker px-2.5 py-0.5 rounded-none font-normal italic inline-block">
-                  unhurried
-                </mark>{' '}
-                presence.
+                  waitlist
+                </mark>
               </h1>
             </div>
 
@@ -156,7 +155,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
-                    <span>Night paper &amp; optical mirror modes</span>
+                    <span>Dark background, and mirrored text for teleprompter glass</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
@@ -212,7 +211,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   </button>
 
                   <p className="text-center font-label-meta text-xs text-ink-soft leading-relaxed px-2">
-                    Checkout opens soon. We'll email you the moment it's live. No charge today.
+                    Checkout opens soon. We'll email you when it opens. No charge today.
                   </p>
                 </div>
               </form>
@@ -226,7 +225,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               </div>
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0">graphic_eq</span>
-                <span className="font-label-meta text-xs font-semibold text-ink">Adaptive Voice Follow</span>
+                <span className="font-label-meta text-xs font-semibold text-ink">Script follows your voice</span>
               </div>
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0">verified</span>
@@ -264,10 +263,10 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             <div className="p-8 sm:p-10 rounded-2xl bg-paper-raised border border-paper-line shadow-sm space-y-6 text-left">
               <div className="space-y-2">
                 <h3 className="font-title-md text-base font-semibold text-ink">
-                  In the meantime, start practicing free
+                  Until then, use the free demo
                 </h3>
                 <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                  The live browser teleprompter requires no signup or payment. You can paste your pitch script right now and test speech-following recording.
+                  The prompter is free to use, with no sign-up. Paste your script and record a take now.
                 </p>
               </div>
 
@@ -322,7 +321,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
       {/* 3. SHARED FOOTER ON ALL CHECKOUT SCREENS */}
       <footer className="border-t border-paper-line py-8 mt-12 bg-paper-sunk/30">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-faint font-body-sm">
-          <p>© 2026 First Take Studio · Crafted for natural speaking rhythm</p>
+          <p>© 2026 First Take Studio</p>
           <div className="flex items-center gap-4">
             <a
               href="/privacy"
@@ -367,7 +366,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
 
             <div className="space-y-3 text-sm font-body-sm text-ink-soft leading-relaxed">
               <p>
-                Have a question about the upcoming release, speech recognition, or audio rhythm? We're here to help founders and creators record smoothly.
+                Questions about the launch, voice follow, or recording? Email us.
               </p>
               <div className="p-4 rounded-xl bg-paper-sunk border border-paper-line space-y-1">
                 <span className="font-label-meta text-[11px] text-ink-faint uppercase font-bold block">

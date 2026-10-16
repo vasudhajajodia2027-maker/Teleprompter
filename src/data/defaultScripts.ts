@@ -8,8 +8,8 @@ export const DEFAULT_SCRIPTS: Script[] = [
     category: 'active',
     pacingWpm: 148,
     updatedAt: 'Edited 10 mins ago',
-    wordCount: 186,
-    estimatedReadTime: '1m 14s',
+    wordCount: 141,
+    estimatedReadTime: '57s',
     content: `Most creators don't realize this, but the reason your videos feel robotic isn't your camera lens. It isn't your microphone, and it certainly isn't your studio lighting.
 
 It is your teleprompter setup.
@@ -20,12 +20,12 @@ Traditional software rolls at a fixed, artificial speed. If you breathe, it keep
 
 [CAMERA LOOK]
 
-First Take turns this dynamic on its head. Instead of forcing you to race a mechanical crawl, the acoustic tracking engine pins the words directly to the cadence of your actual vocal chords.
+First Take works the other way around. Instead of racing a fixed scroll, you just talk, and the script listens to the words you say and moves with you.
 
 When you pause for effect—it waits.
-When you rush through an energetic anecdote—it accelerates naturally.
+When you speed up through a story—it keeps up.
 
-The result is instant confidence on lens, zero awkward gaze wander, and clean, natural delivery on the very first take.`
+So your eyes stay near the lens, you sound like yourself, and you need fewer takes.`
   },
   {
     id: 'ft-08493',
@@ -34,15 +34,15 @@ The result is instant confidence on lens, zero awkward gaze wander, and clean, n
     category: 'draft',
     pacingWpm: 150,
     updatedAt: 'Edited yesterday',
-    wordCount: 180,
-    estimatedReadTime: '1m 12s',
-    content: `Welcome back! Today we are rolling out three fundamental updates to the voice-synced scroll core. First: automatic silent pause detection that eliminates jarring screen jumps.
+    wordCount: 58,
+    estimatedReadTime: '23s',
+    content: `Welcome back! Today we are rolling out three updates to voice follow. First: when you pause, the script waits, instead of jumping ahead.
 
-Second: native 28-character column constraints that keep your eyes glued directly underneath the webcam lens.
+Second: the line after the one you are reading stays clear, so you can look ahead.
 
 [PAUSE 2s]
 
-And third: local uncompressed camera capture directly to your browser's IndexedDB storage with zero telemetry trackers.`
+And third: when you stop recording, your take opens right away, ready to download or record again.`
   },
   {
     id: 'ft-08494',
@@ -51,13 +51,13 @@ And third: local uncompressed camera capture directly to your browser's IndexedD
     category: 'template',
     pacingWpm: 160,
     updatedAt: 'Saved preset',
-    wordCount: 95,
-    estimatedReadTime: '38s',
+    wordCount: 50,
+    estimatedReadTime: '19s',
     content: `[HOOK: 3-5 SECONDS] Stop scrolling if you still edit videos the old way. 
 
-[KEY REVELATION] Today I will demonstrate the simple formula used by high-production studios to record complete 10-minute deep dives in a single unedited take.
+[KEY POINT] Today I'll show you how I record a full 10-minute video in a single take, with no editing.
 
-[CALL TO ACTION] Test the free browser sandbox link right below and drop your questions in the comments.`
+[CALL TO ACTION] Try it free with the link below, and leave your questions in the comments.`
   }
 ];
 

@@ -47,7 +47,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
 
   const handleFileUpload = (file: File) => {
     if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
-      alert('Please upload a .txt or .md plain text file.');
+      alert('Choose a .txt or .md text file.');
       return;
     }
     const reader = new FileReader();
@@ -291,10 +291,10 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
             <div className="w-12 h-12 rounded-full bg-forest-tint flex items-center justify-center text-forest mb-3 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
             </div>
-            <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Drop your .txt script here</h4>
-            <p className="font-body-sm text-sm text-ink-soft mt-1">or click to browse from local workstation</p>
+            <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Drop a .txt or .md script here</h4>
+            <p className="font-body-sm text-sm text-ink-soft mt-1">or click to choose a file</p>
             <span className="mt-4 font-label-meta text-xs text-ink-faint">
-              UTF-8 Plain Text, Markdown supported (max 2MB)
+              Plain text files (.txt or .md)
             </span>
           </div>
 
@@ -308,7 +308,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                 </span>
               </div>
               <p className="font-body-sm text-sm text-ink leading-relaxed">
-                Scripts are stored locally in this browser. Export anytime to keep a backup or sync scripts between recording stations.
+                Scripts are saved in this browser, and to your account if you sign in. Download a backup file to keep a copy or move your scripts to another computer.
               </p>
             </div>
 
@@ -331,14 +331,14 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
         <section className="bg-paper-sunk rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-paper-line">
           <div className="flex items-center gap-4">
             <img
-              alt="Warm atmospheric photo of an indie writing desk with mechanical keyboard, leather notebook, brass microphone"
+              alt="Writing desk with a keyboard, a notebook and a microphone"
               className="w-16 h-16 rounded-lg object-cover shadow-xs shrink-0 border border-paper-line"
               src={ASSETS.writingDesk}
             />
             <div>
               <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Voice Tracking Setup Guide</h4>
               <p className="font-body-sm text-sm text-ink-soft">
-                Learn how speech cadence auto-scrolling adapts to your speech rate with zero latency.
+                How voice follow works, and how to set up your microphone and screen.
               </p>
             </div>
           </div>
@@ -356,20 +356,20 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-paper-raised rounded-xl max-w-lg w-full p-6 shadow-2xl border border-paper-line space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-paper-line">
-              <h3 className="font-headline-sm text-lg font-semibold text-ink">Voice Tracking Setup Guide</h3>
+              <h3 className="font-headline-sm text-lg font-semibold text-ink">How to set up voice follow</h3>
               <button onClick={() => setShowGuideModal(false)} className="text-ink-soft hover:text-ink cursor-pointer">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             <div className="space-y-3 font-body-sm text-sm text-ink leading-relaxed">
               <p>
-                <strong>1. Ambient Calibration:</strong> Place your microphone 6–10 inches from your mouth. The green VU meter will indicate comfortable vocal levels (-24 dB to -12 dB).
+                <strong>1. Microphone.</strong> Use Chrome or Edge and allow the microphone when asked. Keep the mic 6–10 inches from your mouth. Word tracking works best in a quiet room.
               </p>
               <p>
-                <strong>2. Pacing Cues:</strong> Add <code className="font-label-meta text-xs bg-paper-sunk px-1 py-0.5 rounded">[PAUSE 2s]</code> or <code className="font-label-meta text-xs bg-paper-sunk px-1 py-0.5 rounded">[CAMERA LOOK]</code> syntax. When spoken aloud, First Take holds the yellow highlight on your clause.
+                <strong>2. Notes in brackets.</strong> Add <code className="font-label-meta text-xs bg-paper-sunk px-1 py-0.5 rounded">[PAUSE 2s]</code> or <code className="font-label-meta text-xs bg-paper-sunk px-1 py-0.5 rounded">[CAMERA LOOK]</code> as reminders. They stay on screen. You don't read them aloud, and the script skips them.
               </p>
               <p>
-                <strong>3. Gaze Centerline:</strong> Keep your script column constrained to 28 characters wide so your eye pupils remain steady and centered under the webcam lens.
+                <strong>3. Eye line.</strong> The prompter keeps the text in a narrow column near the top of the screen. Put the window just below your camera so your eyes stay close to the lens.
               </p>
             </div>
             <div className="pt-3 border-t border-paper-line flex justify-end">
