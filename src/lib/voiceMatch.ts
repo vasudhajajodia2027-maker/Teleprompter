@@ -143,20 +143,22 @@ export function tailTokensFromResults(transcripts: string[], count = 6): string[
   return all.slice(-count);
 }
 
-// How far ahead of the current position a heard phrase may match.
-const LOOKAHEAD = 40;
+// Matches within this many words ahead count as "reading on".
+const NEAR_WINDOW = 40;
+// A jump further ahead (the speaker skipped a section) needs at least this many
+// heard words in a row matching the script, since short phrases repeat.
+const FAR_MIN_RUN = 4;
 
 // Returns the new position (index of the next speech token to say). Never moves
 // backward; returns `position` unchanged when the heard words don't match.
 export function advanceSpeechPosition(tokens: SpeechToken[], position: number, heard: string[]): number {
   if (heard.length === 0 || tokens.length === 0) return position;
-  const end = Math.min(tokens.length - 1, position + LOOKAHEAD);
   const last = heard[heard.length - 1];
-  let best = position;
-  let bestRun = 0;
+  let near = { pos: position, run: 0 };
+  let far = { pos: position, run: 0 };
 
   // Try each script token as the landing spot for the newest heard word.
-  for (let j = Math.max(0, position - 1); j <= end; j++) {
+  for (let j = Math.max(0, position - 1); j < tokens.length; j++) {
     let run = 0;
     while (
       run < heard.length &&
@@ -167,15 +169,19 @@ export function advanceSpeechPosition(tokens: SpeechToken[], position: number, h
     }
     if (run === 0) continue;
 
-    // One matching word is only trusted when it is long and right next to us.
-    const trustedSingle = run === 1 && last.length >= 5 && j - position <= 2;
-    if (run < 2 && !trustedSingle) continue;
-
-    if (run > bestRun) {
-      bestRun = run;
-      best = j + 1;
+    if (j - position <= NEAR_WINDOW) {
+      // One matching word is only trusted when it is long and right next to us.
+      const trustedSingle = run === 1 && last.length >= 5 && j - position <= 2;
+      if ((run >= 2 || trustedSingle) && run > near.run) near = { pos: j + 1, run };
+    } else if (run >= FAR_MIN_RUN && run > far.run) {
+      // Earliest strongest match wins, so a later repeat of the phrase doesn't.
+      far = { pos: j + 1, run };
     }
   }
 
+  // Reading on is the usual case; jump ahead only when the far match is
+  // clearly better than anything nearby.
+  let best = near.pos;
+  if (far.run > 0 && (near.run === 0 || far.run >= near.run + 2)) best = far.pos;
   return Math.max(position, Math.min(best, tokens.length));
 }

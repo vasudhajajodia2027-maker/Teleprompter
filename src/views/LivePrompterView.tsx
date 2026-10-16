@@ -335,6 +335,22 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     [tokenizedWords]
   );
 
+  // Where the scroll should anchor: the current word, or — once only the last
+  // few words of a line are left — the first spoken word of the next line, so
+  // the next line is already waiting at the reading guide.
+  const LINE_END_LOOKAHEAD = 3;
+  const scrollAnchorWordRef = useRef<number>(0);
+  {
+    const cur = Math.min(currentWordIndex, tokenizedWords.length - 1);
+    const para = tokenizedWords[cur]?.paragraphIndex ?? 0;
+    let lastInPara = cur;
+    while (tokenizedWords[lastInPara + 1]?.paragraphIndex === para) lastInPara++;
+    const wordsLeft = speechTokens.filter((t) => t.wordIndex >= cur && t.wordIndex <= lastInPara).length;
+    const nextLineStart = speechTokens.find((t) => t.wordIndex > lastInPara)?.wordIndex;
+    scrollAnchorWordRef.current =
+      wordsLeft <= LINE_END_LOOKAHEAD && nextLineStart !== undefined ? nextLineStart : cur;
+  }
+
   // Point word tracking at a displayed word (manual jump or restart).
   const syncSpeechPosToWord = useCallback(
     (wordIndex: number) => {
@@ -591,13 +607,13 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         if (wordTrackingRef.current && container) {
           // Words are being recognized: glide so the line being read sits on
           // the reading guide, leaving the following lines visible below it.
-          const wordEl = document.getElementById(`ft-word-${currentWordIndexRef.current}`);
+          const wordEl = document.getElementById(`ft-word-${scrollAnchorWordRef.current}`);
           if (wordEl) {
             const guideY = container.clientHeight * 0.33;
             const offset =
               wordEl.getBoundingClientRect().top - container.getBoundingClientRect().top - guideY;
             if (Math.abs(offset) > 1) {
-              container.scrollTop += offset * Math.min(1, deltaSec * 6);
+              container.scrollTop += offset * Math.min(1, deltaSec * 12);
             }
           }
         } else if (container && content && scrollVelocityMultiplierRef.current > 0.01) {
@@ -686,10 +702,29 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
     setActiveLineIndex(0);
     setCurrentWordIndex(0);
+    currentWordIndexRef.current = 0;
     targetWordIndexRef.current = 0;
     speechPosRef.current = 0;
     paceHistoryRef.current = [];
     setElapsedSeconds(0);
+    setLastRecognizedPhrase('');
+    // The recognizer keeps everything heard in this listening session; restart
+    // it so words said before "Start over" can't pull the script back down.
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+  };
+
+  // Start/Pause; starting again at the end of the script begins from the top.
+  const handleStartPause = () => {
+    if (isPaused && currentWordIndexRef.current >= tokenizedWords.length - 1) {
+      handleRestartFromTop();
+    }
+    setIsPaused(!isPaused);
   };
 
   // -------------------------------------------------------------
@@ -1119,7 +1154,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
       if (e.code === 'Space') {
         e.preventDefault();
-        setIsPaused((prev) => !prev);
+        handleStartPause();
+      } else if (e.code === 'Home' && !isRecording) {
+        e.preventDefault();
+        handleRestartFromTop();
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         handleToggleRecord();
@@ -1157,7 +1195,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRecording, takes, handleToggleRecord, previewTake, showHelpModal, showTakesModal, countdown]);
+  }, [isRecording, isPaused, takes, handleToggleRecord, previewTake, showHelpModal, showTakesModal, countdown]);
 
   const handleExit = () => {
     const hasUnsavedTakes = takes.some((t) => !t.isDownloaded);
@@ -1705,7 +1743,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             </button>
 
             <button
-              onClick={() => setIsPaused(!isPaused)}
+              onClick={handleStartPause}
               className={`flex items-center gap-1.5 px-4 h-11 rounded-xl transition-colors font-body-sm text-sm cursor-pointer border ${
                 isPaused
                   ? 'bg-forest text-on-forest border-forest font-semibold shadow-xs'
@@ -1719,6 +1757,18 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 {isPaused ? 'play_arrow' : 'pause'}
               </span>
               <span>{isPaused ? 'Start' : 'Pause'}</span>
+            </button>
+
+            <button
+              onClick={handleRestartFromTop}
+              disabled={isRecording}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                isNightMode ? 'hover:bg-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0]' : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
+              }`}
+              title="Start over from the first line (Home)"
+              aria-label="Start over from the first line"
+            >
+              <span className="material-symbols-outlined text-[22px]">restart_alt</span>
             </button>
           </div>
 
@@ -2016,8 +2066,12 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
             <div className="space-y-3 font-body-sm text-sm">
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Pause / Resume Prompter</span>
+                <span className="text-ink-soft">Start / Pause</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Space</kbd>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
+                <span className="text-ink-soft">Start over from the first line</span>
+                <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Home</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
                 <span className="text-ink-soft">Start 3-2-1 / Stop Take</span>
