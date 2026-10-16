@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Script } from '../types';
+import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, normalizeText } from '../lib/voiceMatch';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -82,106 +83,6 @@ interface LivePrompterViewProps {
   script: Script;
   onExit: () => void;
   isPro?: boolean;
-}
-
-// Contractions, numbers, and filler dictionaries for robust normalization
-const CONTRACTIONS: Record<string, string> = {
-  "don't": "do not", "dont": "do not",
-  "doesn't": "does not", "doesnt": "does not",
-  "didn't": "did not", "didnt": "did not",
-  "it's": "it is", "its": "it is",
-  "that's": "that is", "thats": "that is",
-  "what's": "what is", "whats": "what is",
-  "there's": "there is", "theres": "there is",
-  "we're": "we are", "were": "we are",
-  "they're": "they are", "theyre": "they are",
-  "you're": "you are", "youre": "you are",
-  "i'm": "i am", "im": "i am",
-  "can't": "cannot", "cant": "cannot",
-  "won't": "will not", "wont": "will not",
-  "i've": "i have", "ive": "i have",
-  "we've": "we have", "weve": "we have",
-  "you've": "you have", "youve": "you have",
-  "isn't": "is not", "isnt": "is not",
-  "aren't": "are not", "arent": "are not",
-  "wasn't": "was not", "wasnt": "was not",
-  "weren't": "were not", "werent": "were not",
-  "i'll": "i will", "ill": "i will",
-  "you'll": "you will", "youll": "you will",
-  "we'll": "we will", "well": "we will",
-  "they'll": "they will", "theyll": "they will",
-};
-
-const NUMBER_WORDS: Record<string, string> = {
-  "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
-  "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
-  "10": "ten", "11": "eleven", "12": "twelve", "13": "thirteen",
-  "14": "fourteen", "15": "fifteen", "16": "sixteen", "17": "seventeen",
-  "18": "eighteen", "19": "nineteen", "20": "twenty", "30": "thirty",
-  "40": "forty", "50": "fifty", "60": "sixty", "70": "seventy",
-  "80": "eighty", "90": "ninety", "100": "hundred", "1000": "thousand",
-};
-
-const FILLER_WORDS = new Set(["um", "uh", "like", "so", "you know", "ah", "er"]);
-
-function normalizeText(text: string): string[] {
-  let lower = text.toLowerCase();
-
-  for (const [contraction, expansion] of Object.entries(CONTRACTIONS)) {
-    const reg = new RegExp(`\\b${contraction}\\b`, 'gi');
-    lower = lower.replace(reg, expansion);
-  }
-
-  lower = lower.replace(/\b\d+\b/g, (match) => NUMBER_WORDS[match] || match);
-  const clean = lower.replace(/[^a-z0-9\s]/g, ' ');
-  return clean.split(/\s+/).filter((t) => t && !FILLER_WORDS.has(t));
-}
-
-function phoneticKey(word: string): string {
-  if (!word) return '';
-  const first = word[0];
-  const rest = word.slice(1).replace(/[aeiouy]/g, '');
-  return (first + rest).replace(/(.)\1+/g, '$1');
-}
-
-function levenshtein(a: string, b: string): number {
-  const an = a.length, bn = b.length;
-  if (an === 0) return bn;
-  if (bn === 0) return an;
-  if (Math.abs(an - bn) > 2) return Math.abs(an - bn);
-  const matrix: number[][] = [];
-  for (let i = 0; i <= an; i++) matrix[i] = [i];
-  for (let j = 0; j <= bn; j++) matrix[0][j] = j;
-  for (let i = 1; i <= an; i++) {
-    for (let j = 1; j <= bn; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
-      );
-    }
-  }
-  return matrix[an][bn];
-}
-
-function fuzzyWordMatch(a: string, b: string): boolean {
-  if (!a || !b) return false;
-  if (a === b) return true;
-  if (a.length >= 4 && b.length >= 4 && a.slice(0, 4) === b.slice(0, 4)) {
-    return true;
-  }
-  if (a.length >= 3 && b.length >= 3 && phoneticKey(a) === phoneticKey(b)) {
-    return true;
-  }
-  const minLen = Math.min(a.length, b.length);
-  if (minLen >= 4 && minLen <= 6) {
-    return levenshtein(a, b) <= 1;
-  }
-  if (minLen >= 7) {
-    return levenshtein(a, b) <= 2;
-  }
-  return false;
 }
 
 const MIC_BLOCKED_NOTICE =
@@ -309,6 +210,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const lastRafTimeRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<any>(null);
   const countdownIntervalRef = useRef<any>(null);
+  // Read at stop time; state values captured when recording began would be stale.
+  const recordStartTimeRef = useRef<number>(0);
+  const takeCounterRef = useRef<number>(0);
 
   // Web Audio API refs for hybrid volume-based scrolling
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -329,11 +233,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   // Pacing history for learning words per minute over the last 15 seconds
   const paceHistoryRef = useRef<{ time: number; wordIndex: number }[]>([]);
 
-  // Two-pass interim confirmation ref
-  const pendingMatchRef = useRef<{ candidateIdx: number; count: number }>({
-    candidateIdx: -1,
-    count: 0,
-  });
+  // Word tracking: position in the spoken-form token list, and whether the
+  // speech recognizer is currently driving the scroll (else volume does).
+  const speechPosRef = useRef<number>(0);
+  const wordTrackingRef = useRef<boolean>(false);
 
   // State mirrors for RAF loops and event handlers
   const isPausedRef = useRef<boolean>(isPaused);
@@ -427,6 +330,20 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
   const totalWords = tokenizedWords.length || 1;
 
+  const speechTokens = useMemo(
+    () => buildSpeechTokens(tokenizedWords.map((w) => w.original)),
+    [tokenizedWords]
+  );
+
+  // Point word tracking at a displayed word (manual jump or restart).
+  const syncSpeechPosToWord = useCallback(
+    (wordIndex: number) => {
+      const idx = speechTokens.findIndex((t) => t.wordIndex >= wordIndex);
+      speechPosRef.current = idx === -1 ? speechTokens.length : idx;
+    },
+    [speechTokens]
+  );
+
   // Format mm:ss
   const formatTime = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
@@ -442,6 +359,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const updateActiveLineFromScroll = useCallback(() => {
     const container = prompterContainerRef.current;
     if (!container) return;
+    // While words are being tracked, the spoken position decides the line.
+    if (scrollModeRef.current === 'voice' && wordTrackingRef.current) return;
 
     const guideViewportY = container.clientHeight * 0.33;
     const guideAbsoluteY = container.scrollTop + guideViewportY;
@@ -669,8 +588,20 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           driftCorrectionFactorRef.current = 1.0;
         }
 
-        // Apply hybrid movement
-        if (container && content && scrollVelocityMultiplierRef.current > 0.01) {
+        if (wordTrackingRef.current && container) {
+          // Words are being recognized: glide so the line being read sits on
+          // the reading guide, leaving the following lines visible below it.
+          const wordEl = document.getElementById(`ft-word-${currentWordIndexRef.current}`);
+          if (wordEl) {
+            const guideY = container.clientHeight * 0.33;
+            const offset =
+              wordEl.getBoundingClientRect().top - container.getBoundingClientRect().top - guideY;
+            if (Math.abs(offset) > 1) {
+              container.scrollTop += offset * Math.min(1, deltaSec * 6);
+            }
+          }
+        } else if (container && content && scrollVelocityMultiplierRef.current > 0.01) {
+          // No word recognition available: follow the loudness of the voice.
           const renderedHeight = content.scrollHeight || 1000;
           const pixelsPerWord = renderedHeight / totalWords;
           const pixelsPerSecond =
@@ -741,6 +672,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     if (firstWord) {
       setCurrentWordIndex(firstWord.globalIndex);
       targetWordIndexRef.current = firstWord.globalIndex;
+      syncSpeechPosToWord(firstWord.globalIndex);
       paceHistoryRef.current = [{ time: performance.now(), wordIndex: firstWord.globalIndex }];
     }
     const el = document.getElementById(`prompter-para-${paraIdx}`);
@@ -755,6 +687,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     setActiveLineIndex(0);
     setCurrentWordIndex(0);
     targetWordIndexRef.current = 0;
+    speechPosRef.current = 0;
     paceHistoryRef.current = [];
     setElapsedSeconds(0);
   };
@@ -795,7 +728,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = speechLang;
-      recognition.maxAlternatives = 3;
+      recognition.maxAlternatives = 1;
 
       recognition.onaudiostart = () => {
         if (!isDisposed) setIsListening(true);
@@ -804,130 +737,46 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         if (!isDisposed) setIsListening(true);
       };
 
-      // Match processing with fuzzy equality, 4-word lookahead, and confirmation
+      // Each result moves the reading position to the last script word heard.
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         if (isDisposed) return;
         setIsListening(true);
 
-        let finalTokens: string[] = [];
-        let interimTokens: string[] = [];
-
+        // Top guess of every result, finished or not, oldest first.
+        const transcripts: string[] = [];
         for (let i = 0; i < event.results.length; i++) {
-          const res = event.results[i];
-          const isResultFinal = res.isFinal;
-
-          // Check top alternatives up to 3
-          const topAlternatives = Math.min(3, res.length);
-          for (let a = 0; a < topAlternatives; a++) {
-            const transcript = res[a].transcript;
-            const norm = normalizeText(transcript);
-            if (isResultFinal) {
-              finalTokens.push(...norm);
-            } else {
-              interimTokens.push(...norm);
-            }
-          }
+          transcripts.push(event.results[i][0]?.transcript || '');
         }
+        const heard = tailTokensFromResults(transcripts);
+        if (heard.length === 0) return;
+        setLastRecognizedPhrase(heard.slice(-4).join(' '));
 
-        const combinedTokens = finalTokens.length > 0 ? finalTokens : interimTokens;
-        if (combinedTokens.length === 0) return;
+        const prevPos = speechPosRef.current;
+        const nextPos = advanceSpeechPosition(speechTokens, prevPos, heard);
+        if (nextPos <= prevPos) return;
 
-        // Last 4 recognized words
-        const last4 = combinedTokens.slice(-4);
-        setLastRecognizedPhrase(last4.join(' '));
+        speechPosRef.current = nextPos;
+        wordTrackingRef.current = true;
+        const wordIdx =
+          nextPos >= speechTokens.length
+            ? tokenizedWords.length - 1
+            : speechTokens[nextPos].wordIndex;
+        targetWordIndexRef.current = wordIdx;
+        setCurrentWordIndex(wordIdx);
+        setActiveLineIndex(tokenizedWords[wordIdx]?.paragraphIndex ?? 0);
 
-        const currentPos = currentWordIndexRef.current;
-        const windowStart = currentPos + 1;
-        const windowEnd = Math.min(tokenizedWords.length - 1, currentPos + 25);
-
-        if (windowStart >= tokenizedWords.length) return;
-
-        let bestCandidateIdx = -1;
-
-        // Match sequence: accept if at least 2 of 3 consecutive words match in order within the next 25 words
-        // Prefer the closest match ahead
-        if (last4.length >= 2) {
-          const testWindows: string[][] = [];
-          if (last4.length >= 3) {
-            testWindows.push([last4[0], last4[1], last4[2]]);
-            if (last4.length >= 4) {
-              testWindows.push([last4[1], last4[2], last4[3]]);
-            }
-          } else {
-            testWindows.push([last4[0], last4[1]]);
-          }
-
-          for (let i = windowStart; i <= windowEnd; i++) {
-            let matchedInThisPos = false;
-
-            for (const win of testWindows) {
-              const pairs: [string, string][] = [];
-              if (win.length === 2) {
-                pairs.push([win[0], win[1]]);
-              } else {
-                pairs.push([win[0], win[1]]);
-                pairs.push([win[1], win[2]]);
-                pairs.push([win[0], win[2]]);
-              }
-
-              for (const [w1, w2] of pairs) {
-                if (fuzzyWordMatch(w1, tokenizedWords[i].normalized)) {
-                  const maxLookahead = Math.min(tokenizedWords.length - 1, i + 3);
-                  for (let k = i + 1; k <= maxLookahead; k++) {
-                    if (fuzzyWordMatch(w2, tokenizedWords[k].normalized)) {
-                      bestCandidateIdx = k;
-                      matchedInThisPos = true;
-                      break;
-                    }
-                  }
-                }
-                if (matchedInThisPos) break;
-              }
-              if (matchedInThisPos) break;
-            }
-            if (matchedInThisPos) break; // Prefer closest match ahead
-          }
-        }
-
-        // Two-pass commit logic: commit immediately if final, or if same interim candidate appears twice
-        if (bestCandidateIdx > currentPos && bestCandidateIdx < tokenizedWords.length) {
-          const lastResult = event.results[event.results.length - 1];
-          const isFinal = lastResult?.isFinal;
-
-          let shouldCommit = false;
-          if (isFinal) {
-            shouldCommit = true;
-          } else {
-            if (pendingMatchRef.current.candidateIdx === bestCandidateIdx) {
-              pendingMatchRef.current.count++;
-              if (pendingMatchRef.current.count >= 2) {
-                shouldCommit = true;
-              }
-            } else {
-              pendingMatchRef.current = { candidateIdx: bestCandidateIdx, count: 1 };
-            }
-          }
-
-          if (shouldCommit) {
-            targetWordIndexRef.current = bestCandidateIdx;
-
-            // Learn speaker's pace over last 15s
-            const now = performance.now();
-            paceHistoryRef.current.push({ time: now, wordIndex: bestCandidateIdx });
-            paceHistoryRef.current = paceHistoryRef.current.filter((p) => now - p.time <= 15000);
-
-            if (paceHistoryRef.current.length >= 2) {
-              const first = paceHistoryRef.current[0];
-              const dtMin = (now - first.time) / 60000;
-              const dw = bestCandidateIdx - first.wordIndex;
-              if (dtMin >= 0.05 && dw > 0) {
-                const measuredWpm = dw / dtMin;
-                if (measuredWpm >= 50 && measuredWpm <= 300) {
-                  const baseTarget = baseWpm * speedMultiplier;
-                  const blended = Math.round(0.7 * measuredWpm + 0.3 * baseTarget);
-                  setDynamicWpm(Math.min(220, Math.max(80, blended)));
-                }
-              }
+        // Learn the speaker's pace over the last 15s for the time-left estimate
+        const now = performance.now();
+        paceHistoryRef.current.push({ time: now, wordIndex: wordIdx });
+        paceHistoryRef.current = paceHistoryRef.current.filter((p) => now - p.time <= 15000);
+        if (paceHistoryRef.current.length >= 2) {
+          const first = paceHistoryRef.current[0];
+          const dtMin = (now - first.time) / 60000;
+          const dw = wordIdx - first.wordIndex;
+          if (dtMin >= 0.05 && dw > 0) {
+            const measuredWpm = dw / dtMin;
+            if (measuredWpm >= 50 && measuredWpm <= 300) {
+              setDynamicWpm(Math.min(220, Math.max(80, Math.round(measuredWpm))));
             }
           }
         }
@@ -950,8 +799,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           setMicBlocked(true);
           setVoiceNotice(err === 'audio-capture' ? 'No microphone found. Plug one in, or switch to steady auto-scroll.' : MIC_BLOCKED_NOTICE);
         } else if (err === 'network') {
+          wordTrackingRef.current = false;
           setVoiceNotice('Word tracking is offline right now, so the script follows the sound of your voice instead.');
         } else {
+          wordTrackingRef.current = false;
           setVoiceNotice('Word tracking paused for a moment. The script still follows the sound of your voice.');
         }
       };
@@ -997,9 +848,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         }
       }
       recognitionRef.current = null;
+      wordTrackingRef.current = false;
       setIsListening(false);
     };
-  }, [scrollMode, isPaused, speechLang, tokenizedWords, baseWpm, speedMultiplier]);
+  }, [scrollMode, isPaused, speechLang, tokenizedWords, speechTokens]);
 
   // -------------------------------------------------------------
   // REAL RECORDING & WEBCAM ACTIVATION
@@ -1124,15 +976,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       };
 
       recorder.onstop = () => {
-        const actualMime = mimeType || 'video/webm';
+        const actualMime = recorder.mimeType || mimeType || 'video/webm';
         const blob = new Blob(recordedChunksRef.current, { type: actualMime });
         const url = URL.createObjectURL(blob);
-        const newTakeNumber = takes.length + 1;
+        takeCounterRef.current += 1;
 
         const newTake: PrompterTake = {
           id: `take-${Date.now()}`,
-          takeNumber: newTakeNumber,
-          durationSec: elapsedSeconds,
+          takeNumber: takeCounterRef.current,
+          durationSec: Math.max(1, Math.round((Date.now() - recordStartTimeRef.current) / 1000)),
           blob,
           url,
           mimeType: actualMime,
@@ -1141,9 +993,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         };
 
         setTakes((prev) => [...prev, newTake]);
-        setShowTakesModal(true);
+        // Go straight to the take just recorded: watch, download or retake.
+        setPreviewTake(newTake);
       };
 
+      recordStartTimeRef.current = Date.now();
       recorder.start(1000);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
@@ -1705,7 +1559,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       <div
         ref={prompterContainerRef}
         onScroll={updateActiveLineFromScroll}
-        className="h-screen overflow-y-auto w-full relative pt-[33vh] pb-[60vh] px-6 flex justify-center scroll-smooth focus:outline-none"
+        className="h-screen overflow-y-auto w-full relative pt-[33vh] pb-[60vh] px-6 flex justify-center focus:outline-none"
       >
         <div
           ref={scriptContentRef}
@@ -1718,6 +1572,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           {paragraphs.map((para, paraIdx) => {
             const isPast = paraIdx < activeLineIndex;
             const isActive = paraIdx === activeLineIndex;
+            // The line after the current one stays readable so you can look ahead.
+            const isNext = paraIdx === activeLineIndex + 1;
 
             const wordsForThisPara = tokenizedWords.filter((w) => w.paragraphIndex === paraIdx);
 
@@ -1735,6 +1591,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                     ? isNightMode
                       ? 'text-[#6B665C] opacity-40 hover:opacity-75'
                       : 'text-ink-faint opacity-45 hover:opacity-80'
+                    : isNext
+                    ? isNightMode
+                      ? 'text-[#FAF7F0] opacity-90'
+                      : 'text-ink opacity-90'
                     : isNightMode
                     ? 'text-[#A39E92] opacity-60 hover:opacity-90'
                     : 'text-ink-soft opacity-65 hover:opacity-90'
@@ -2112,6 +1972,16 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
                   <span>Download Take</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewTake(null);
+                    handleToggleRecord();
+                  }}
+                  className="px-4 py-2 rounded-lg border border-paper-line hover:bg-paper-sunk text-ink font-body-sm text-sm cursor-pointer flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[18px]">replay</span>
+                  <span>Retake</span>
                 </button>
                 <button
                   onClick={() => setPreviewTake(null)}
