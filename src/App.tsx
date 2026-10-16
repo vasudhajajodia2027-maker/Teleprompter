@@ -61,7 +61,7 @@ function getPathForView(view: AppView): string {
 export default function App() {
   const { user, signInWithGoogle } = useAuth();
   const [currentView, setCurrentView] = useState<AppView>(getInitialView);
-  const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter' | 'tracking' | 'recordings'>('scripts');
+  const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter'>('scripts');
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
 
   // Sync state with browser Back/Forward buttons
@@ -444,9 +444,6 @@ export default function App() {
               setActiveSidebarSection(sec);
               if (sec === 'scripts') handleNavigate('scripts');
               else if (sec === 'prompter') handleOpenPrompter(activeScript.id);
-              else if (sec === 'tracking' || sec === 'recordings') {
-                handleNavigate('scripts');
-              }
             }}
           />
 

@@ -4,11 +4,10 @@ import { useAuth } from '../context/AuthContext.tsx';
 
 interface SidebarProps {
   currentView: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
-  activeSection?: 'scripts' | 'prompter' | 'tracking' | 'recordings';
+  activeSection?: 'scripts' | 'prompter';
   onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
   onNewScript: () => void;
-  onSelectSection?: (section: 'scripts' | 'prompter' | 'tracking' | 'recordings') => void;
-  isMicActive?: boolean;
+  onSelectSection?: (section: 'scripts' | 'prompter') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -17,16 +16,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   onNewScript,
   onSelectSection,
-  isMicActive = true,
 }) => {
   const { user, signInWithGoogle, signOutUser } = useAuth();
 
-  const handleNav = (target: 'scripts' | 'prompter' | 'tracking' | 'recordings') => {
+  const handleNav = (target: 'scripts' | 'prompter') => {
     if (onSelectSection) onSelectSection(target);
     if (target === 'scripts') onNavigate('scripts');
     else if (target === 'prompter') onNavigate('prompter');
-    else if (target === 'tracking') onNavigate('scripts');
-    else if (target === 'recordings') onNavigate('scripts');
   };
 
   return (
@@ -65,81 +61,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="material-symbols-outlined text-[20px]">record_voice_over</span>
             <span>Live Prompter</span>
           </button>
-
-          <button
-            onClick={() => handleNav('tracking')}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left cursor-pointer ${
-              activeSection === 'tracking'
-                ? 'bg-paper-raised text-forest font-semibold shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
-                : 'font-body-sm text-sm text-on-surface-variant hover:bg-paper-raised hover:text-ink'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[20px]">graphic_eq</span>
-            <span>Voice Tracking</span>
-          </button>
-
-          <button
-            onClick={() => handleNav('recordings')}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left cursor-pointer ${
-              activeSection === 'recordings'
-                ? 'bg-paper-raised text-forest font-semibold shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
-                : 'font-body-sm text-sm text-on-surface-variant hover:bg-paper-raised hover:text-ink'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[20px]">videocam</span>
-            <span>Recordings</span>
-          </button>
         </nav>
       </div>
 
       {/* Bottom status and CTA */}
       <div className="flex flex-col gap-3">
-        {/* User Account & Database Sync */}
+        {/* User Account */}
         <div className="p-3 rounded-lg bg-paper-raised flex items-center justify-between border border-paper-line/50">
           {user ? (
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-7 h-7 rounded-full bg-forest text-on-forest flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-forest text-on-forest flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                   {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="overflow-hidden">
-                  <p className="text-xs font-medium text-ink truncate max-w-[105px]" title={user.email || ''}>
+                  <p className="text-xs font-medium text-ink truncate max-w-[125px]" title={user.email || ''}>
                     {user.email?.split('@')[0]}
                   </p>
-                  <span className="text-[10px] text-forest font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
-                    Supabase Synced
-                  </span>
+                  <p className="text-[11px] text-ink-faint truncate max-w-[125px]">
+                    {user.email}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={signOutUser}
                 title="Sign out"
-                className="text-ink-faint hover:text-ink cursor-pointer p-1 rounded hover:bg-paper-sunk transition-colors"
+                className="text-ink-faint hover:text-ink cursor-pointer p-1.5 rounded hover:bg-paper-sunk transition-colors"
               >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
+                <span className="material-symbols-outlined text-[17px]">logout</span>
               </button>
             </div>
           ) : (
             <button
               onClick={signInWithGoogle}
-              className="w-full flex items-center justify-center gap-1.5 py-1 px-2 text-ink text-xs font-medium hover:text-forest transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-1.5 px-2 text-ink text-xs font-medium hover:text-forest transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[16px] text-forest">cloud_sync</span>
-              <span>Sign in to Sync</span>
+              <span className="material-symbols-outlined text-[17px] text-forest">account_circle</span>
+              <span>Sign in with Google</span>
             </button>
           )}
-        </div>
-
-        {/* Mic telemetry pill */}
-        <div className="p-3 rounded-lg bg-paper-raised flex items-center justify-between border border-paper-line/50">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isMicActive ? 'bg-forest animate-pulse' : 'bg-ink-faint'}`}></div>
-            <span className="font-label-meta text-xs text-ink-soft">
-              {isMicActive ? 'Mic Ready' : 'Mic Off'}
-            </span>
-          </div>
-          <span className="font-label-meta text-xs text-forest font-bold">48kHz</span>
         </div>
 
         {/* New script action */}
