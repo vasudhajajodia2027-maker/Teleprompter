@@ -131,10 +131,10 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
               <p>
                 Once one-time purchases open, every license purchase comes with a 14-day money-back guarantee. If First Take Studio does not fit your speaking workflow for any reason within 14 days of your purchase date, email us at{' '}
                 <a
-                  href="mailto:vasudhajajo@gmail.com"
+                  href="mailto:support@firsttakestudio.com"
                   className="text-forest font-medium underline hover:text-forest-dark"
                 >
-                  vasudhajajo@gmail.com
+                  support@firsttakestudio.com
                 </a>{' '}
                 for a full, unconditional refund.
               </p>
@@ -250,10 +250,10 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
               <p className="pt-1">
                 Email:{' '}
                 <a
-                  href="mailto:vasudhajajo@gmail.com"
+                  href="mailto:support@firsttakestudio.com"
                   className="text-forest font-semibold underline hover:text-forest-dark"
                 >
-                  vasudhajajo@gmail.com
+                  support@firsttakestudio.com
                 </a>
               </p>
             </div>

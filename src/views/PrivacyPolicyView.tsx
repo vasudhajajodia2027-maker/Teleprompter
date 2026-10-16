@@ -85,10 +85,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
             <p>
               For any questions regarding this policy or your personal data, you can reach our operator directly at{' '}
               <a
-                href="mailto:vasudhajajo@gmail.com"
+                href="mailto:support@firsttakestudio.com"
                 className="text-forest font-medium underline hover:text-forest-dark"
               >
-                vasudhajajo@gmail.com
+                support@firsttakestudio.com
               </a>.
             </p>
           </div>
@@ -168,7 +168,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               </li>
             </ul>
             <p>
-              These providers process data only as necessary to deliver their respective services and are bound by strict data protection agreements.
+              These providers process data only as needed to deliver their services.
             </p>
           </div>
         </section>
@@ -221,10 +221,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
             <p>
               You have the right to request access to the personal data we hold about you, or to request complete deletion of your account, scripts, and email from our systems. To submit a deletion or access request, email us at{' '}
               <a
-                href="mailto:vasudhajajo@gmail.com"
+                href="mailto:support@firsttakestudio.com"
                 className="text-forest font-medium underline hover:text-forest-dark"
               >
-                vasudhajajo@gmail.com
+                support@firsttakestudio.com
               </a>. Requests are processed promptly within 30 days.
             </p>
           </div>
@@ -278,10 +278,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               <p className="pt-1">
                 Email:{' '}
                 <a
-                  href="mailto:vasudhajajo@gmail.com"
+                  href="mailto:support@firsttakestudio.com"
                   className="text-forest font-semibold underline hover:text-forest-dark"
                 >
-                  vasudhajajo@gmail.com
+                  support@firsttakestudio.com
                 </a>
               </p>
             </div>

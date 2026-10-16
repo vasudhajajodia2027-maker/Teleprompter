@@ -379,7 +379,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   support@firsttakestudio.com
                 </a>
                 <p className="text-xs text-ink-faint pt-1">
-                  Average response time: under 4 hours on business days.
+                  We reply within 24 hours.
                 </p>
               </div>
             </div>
