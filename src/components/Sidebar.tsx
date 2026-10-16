@@ -101,15 +101,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
         </div>
-
-        {/* New script action */}
-        <button
-          onClick={onNewScript}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark transition-all duration-150 cursor-pointer shadow-sm active:scale-98"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          <span>New script</span>
-        </button>
       </div>
     </aside>
   );

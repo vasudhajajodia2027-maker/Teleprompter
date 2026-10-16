@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Script, LicenseStatus } from '../types';
 import { ASSETS } from '../data/defaultScripts';
+import { editedTime, formatEdited, formatReadTime } from '../lib/scriptTime';
 
 interface MyScriptsViewProps {
   scripts: Script[];
@@ -12,6 +13,8 @@ interface MyScriptsViewProps {
   onDeleteScript: (scriptId: string) => void;
   onImportScript: (title: string, content: string) => void;
   onExportAllJson: () => void;
+  onUseTemplate: (templateId: string) => void;
+  onRestoreBackup: (backup: unknown) => number;
 }
 
 export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
@@ -24,6 +27,8 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
   onDeleteScript,
   onImportScript,
   onExportAllJson,
+  onUseTemplate,
+  onRestoreBackup,
 }) => {
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [sortOption, setSortOption] = useState<'lastEdited' | 'wordCount'>('lastEdited');
@@ -32,22 +37,37 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
 
   // Count from the text itself so the library always matches the editor.
   const countWords = (content: string) => (content.trim() ? content.trim().split(/\s+/).length : 0);
-  const readTime = (content: string, wpm: number) => {
-    const s = Math.round((countWords(content) / (wpm || 150)) * 60);
-    return `${Math.floor(s / 60)}m ${(s % 60).toString().padStart(2, '0')}s`;
-  };
+  const readTime = (content: string, wpm: number) =>
+    formatReadTime(Math.round((countWords(content) / (wpm || 150)) * 60));
 
-  // Active script (hero card)
-  const activeScript = scripts.find((s) => s.category === 'active') || scripts[0];
-  const draftScripts = scripts.filter((s) => s.id !== activeScript?.id);
-  // Default is library order (newest first); "Word Count" puts the longest first.
+  // The featured card is the script edited most recently (templates excluded).
+  // Scripts with no known edit time keep their library order.
+  const byRecent = [...scripts].sort((a, b) => editedTime(b.updatedAt) - editedTime(a.updatedAt));
+  const activeScript = byRecent.find((s) => s.category !== 'template') || byRecent[0];
+  const draftScripts = byRecent.filter((s) => s.id !== activeScript?.id);
   if (sortOption === 'wordCount') {
     draftScripts.sort((a, b) => countWords(b.content) - countWords(a.content));
   }
 
   const handleFileUpload = (file: File) => {
+    if (file.name.toLowerCase().endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        let added = -1;
+        try {
+          added = onRestoreBackup(JSON.parse(String(e.target?.result || '')));
+        } catch {
+          added = -1;
+        }
+        if (added < 0) alert('That file isn’t a First Take backup.');
+        else if (added === 0) alert('Every script in that backup is already in your library.');
+        else alert(`Restored ${added} ${added === 1 ? 'script' : 'scripts'} from the backup.`);
+      };
+      reader.readAsText(file);
+      return;
+    }
     if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
-      alert('Choose a .txt or .md text file.');
+      alert('Choose a .txt or .md text file, or a First Take backup (.json).');
       return;
     }
     const reader = new FileReader();
@@ -85,19 +105,12 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md"
+              accept=".txt,.md,.json"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
               }}
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2.5 rounded-lg bg-paper-raised text-ink font-body-sm text-sm font-medium hover:bg-paper-sunk transition-colors shadow-xs border border-paper-line flex items-center gap-2 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px] text-ink-soft">file_upload</span>
-              <span>Import .txt</span>
-            </button>
             <button
               onClick={onNewScript}
               className="px-5 py-2.5 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-98"
@@ -111,14 +124,14 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
         {/* Script Library Grid */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-headline-sm text-xl font-semibold text-ink">Active Drafts &amp; Readings</h3>
+            <h3 className="font-headline-sm text-xl font-semibold text-ink">All scripts</h3>
             <div className="flex items-center gap-2">
               <span className="font-label-meta text-xs text-ink-faint">Sort by:</span>
               <button
                 onClick={() => setSortOption(sortOption === 'lastEdited' ? 'wordCount' : 'lastEdited')}
                 className="font-label-meta text-xs text-ink font-semibold flex items-center gap-1 hover:text-forest cursor-pointer"
               >
-                {sortOption === 'lastEdited' ? 'Last Edited' : 'Word Count'}
+                {sortOption === 'lastEdited' ? 'Last edited' : 'Word count'}
                 <span className="material-symbols-outlined text-[16px]">swap_vert</span>
               </button>
             </div>
@@ -132,11 +145,14 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                   <div className="space-y-3 max-w-3xl">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="bg-forest-tint text-forest font-label-meta text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
-                        Active Reading
+                        Most recent
                       </span>
-                      <span className="font-label-meta text-xs text-ink-soft">{activeScript.updatedAt}</span>
-                      <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
+                      {formatEdited(activeScript.updatedAt) && (
+                        <>
+                          <span className="font-label-meta text-xs text-ink-soft">{formatEdited(activeScript.updatedAt)}</span>
+                          <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
+                        </>
+                      )}
                       <span className="font-label-meta text-xs text-ink-soft">{countWords(activeScript.content)} words</span>
                       <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
                       <span className="font-label-meta text-xs text-ink-soft">~{readTime(activeScript.content, activeScript.pacingWpm)} read</span>
@@ -161,7 +177,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                     <button
                       onClick={() => onOpenScriptEditor(activeScript.id)}
                       className="w-9 h-9 rounded-lg bg-paper-raised text-ink-soft hover:text-ink hover:bg-paper-sunk transition-colors flex items-center justify-center border border-paper-line cursor-pointer"
-                      title="Edit script draft"
+                      title="Edit script"
                     >
                       <span className="material-symbols-outlined text-[18px]">edit</span>
                     </button>
@@ -182,13 +198,6 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button
-                      onClick={() => onOpenScriptEditor(activeScript.id)}
-                      className="px-4 py-2.5 rounded-lg bg-paper-raised text-ink font-body-sm text-sm font-medium hover:bg-paper-sunk transition-colors flex items-center justify-center gap-2 border border-paper-line cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">tune</span>
-                      <span>Settings</span>
-                    </button>
                     <button
                       onClick={() => onOpenPrompter(activeScript.id)}
                       className="px-5 py-2.5 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98"
@@ -216,9 +225,9 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                           : 'bg-paper-sunk text-ink-soft'
                       }`}
                     >
-                      {script.category === 'template' ? 'Reusable Template' : 'Draft Script'}
+                      {script.category === 'template' ? 'Template' : 'Draft'}
                     </span>
-                    <span className="font-label-meta text-xs text-ink-faint">{script.updatedAt}</span>
+                    <span className="font-label-meta text-xs text-ink-faint">{formatEdited(script.updatedAt)}</span>
                   </div>
 
                   <h4 className="font-title-md text-lg text-ink font-semibold tracking-tight">
@@ -243,10 +252,10 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
 
                   <div className="flex items-center justify-between pt-3 border-t border-paper-line/50">
                     <button
-                      onClick={() => onOpenScriptEditor(script.id)}
+                      onClick={() => (script.category === 'template' ? onUseTemplate(script.id) : onOpenScriptEditor(script.id))}
                       className="text-ink font-body-sm text-sm hover:text-forest flex items-center gap-1 font-medium cursor-pointer"
                     >
-                      {script.category === 'template' ? 'Create script from template' : 'Continue editing'}
+                      {script.category === 'template' ? 'Start a script from this' : 'Continue editing'}
                       <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
 
@@ -291,10 +300,10 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
             <div className="w-12 h-12 rounded-full bg-forest-tint flex items-center justify-center text-forest mb-3 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
             </div>
-            <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Drop a .txt or .md script here</h4>
-            <p className="font-body-sm text-sm text-ink-soft mt-1">or click to choose a file</p>
+            <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Import a script</h4>
+            <p className="font-body-sm text-sm text-ink-soft mt-1">Drop a file here, or click to choose one</p>
             <span className="mt-4 font-label-meta text-xs text-ink-faint">
-              Plain text files (.txt or .md)
+              Text files (.txt, .md), or a First Take backup (.json) to restore it
             </span>
           </div>
 
@@ -308,20 +317,18 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                 </span>
               </div>
               <p className="font-body-sm text-sm text-ink leading-relaxed">
-                Scripts are saved in this browser, and to your account if you sign in. Download a backup file to keep a copy or move your scripts to another computer.
+                Scripts are saved in this browser, and to your account if you sign in. Download a backup file to keep a copy or move your scripts to another computer. To restore it, import the file on the left.
               </p>
             </div>
 
             <div className="pt-4 flex items-center justify-between border-t border-marker-border/30 mt-4">
-              <span className="font-label-meta text-xs text-ink-soft">
-                Storage used: {(JSON.stringify(scripts).length / 1024).toFixed(1)} KB
-              </span>
+              <span></span>
               <button
                 onClick={onExportAllJson}
                 className="px-3 py-1.5 rounded bg-paper-raised text-ink hover:bg-paper font-label-meta text-xs font-medium transition-colors shadow-xs flex items-center gap-1.5 border border-paper-line cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[14px]">download</span>
-                <span>Backup JSON</span>
+                <span>Download backup</span>
               </button>
             </div>
           </aside>
@@ -336,7 +343,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
               src={ASSETS.writingDesk}
             />
             <div>
-              <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Voice Tracking Setup Guide</h4>
+              <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">How to set up voice follow</h4>
               <p className="font-body-sm text-sm text-ink-soft">
                 How voice follow works, and how to set up your microphone and screen.
               </p>

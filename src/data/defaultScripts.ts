@@ -7,7 +7,7 @@ export const DEFAULT_SCRIPTS: Script[] = [
     episodeTag: 'Episode 14 · Script',
     category: 'active',
     pacingWpm: 148,
-    updatedAt: 'Edited 10 mins ago',
+    updatedAt: '',
     wordCount: 141,
     estimatedReadTime: '57s',
     content: `Most creators don't realize this, but the reason your videos feel robotic isn't your camera lens. It isn't your microphone, and it certainly isn't your studio lighting.
@@ -33,7 +33,7 @@ So your eyes stay near the lens, you sound like yourself, and you need fewer tak
     episodeTag: 'Product Launch · Draft',
     category: 'draft',
     pacingWpm: 150,
-    updatedAt: 'Edited yesterday',
+    updatedAt: '',
     wordCount: 58,
     estimatedReadTime: '23s',
     content: `Welcome back! Today we are rolling out three updates to voice follow. First: when you pause, the script waits, instead of jumping ahead.
@@ -50,7 +50,7 @@ And third: when you stop recording, your take opens right away, ready to downloa
     episodeTag: 'Template Preset',
     category: 'template',
     pacingWpm: 160,
-    updatedAt: 'Saved preset',
+    updatedAt: '',
     wordCount: 50,
     estimatedReadTime: '19s',
     content: `[HOOK: 3-5 SECONDS] Stop scrolling if you still edit videos the old way. 

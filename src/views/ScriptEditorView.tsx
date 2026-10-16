@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { nowStamp } from '../lib/scriptTime';
 import { Script } from '../types';
 
 interface ScriptEditorViewProps {
@@ -56,7 +57,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
       pacingWpm: newWpm,
       wordCount: updatedWords,
       estimatedReadTime: estTime,
-      updatedAt: 'Just now',
+      updatedAt: nowStamp(),
     });
 
     setTimeout(() => {

@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Script, LicenseStatus } from './types';
 import { DEFAULT_SCRIPTS } from './data/defaultScripts';
+import { nowStamp } from './lib/scriptTime';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
@@ -59,7 +60,7 @@ function getPathForView(view: AppView): string {
 }
 
 export default function App() {
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
   const [currentView, setCurrentView] = useState<AppView>(getInitialView);
   const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter'>('scripts');
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
@@ -165,7 +166,7 @@ export default function App() {
             pacingWpm: cs.pacing_wpm || 140,
             wordCount: cs.word_count || 0,
             estimatedReadTime: cs.estimated_read_time || '1m 00s',
-            updatedAt: cs.updated_at || 'Just now',
+            updatedAt: cs.updated_at || '',
           }));
           setScripts(formatted);
           if (formatted.length > 0) {
@@ -267,7 +268,7 @@ export default function App() {
       episodeTag: 'Episode Draft · New',
       category: 'draft',
       pacingWpm: 150,
-      updatedAt: 'Just now',
+      updatedAt: nowStamp(),
       wordCount: 0,
       estimatedReadTime: '0s',
       content: 'Write or paste your script here.\n\n[PAUSE 2s]\n\nText in brackets is a note to yourself. You don\'t read it aloud.',
@@ -286,12 +287,58 @@ export default function App() {
       ...target,
       id: `ft-${Math.floor(10000 + Math.random() * 90000)}`,
       title: `Copy of ${target.title}`,
-      updatedAt: 'Just now',
+      updatedAt: nowStamp(),
       category: 'draft',
     };
     setScripts((prev) => [duplicated, ...prev]);
     setSelectedScriptId(duplicated.id);
     persistScriptToCloud(duplicated);
+  };
+
+  // A template is never edited directly: start a new draft from a copy of it.
+  const handleUseTemplate = (templateId: string) => {
+    const template = scripts.find((s) => s.id === templateId);
+    if (!template) return;
+    const draft: Script = {
+      ...template,
+      id: `ft-${Math.floor(10000 + Math.random() * 90000)}`,
+      title: `New ${template.title}`,
+      episodeTag: 'Draft · From template',
+      updatedAt: nowStamp(),
+      category: 'draft',
+    };
+    setScripts((prev) => [draft, ...prev]);
+    persistScriptToCloud(draft);
+    handleOpenScriptEditor(draft.id);
+  };
+
+  // Restore a file made with "Download backup". Scripts already in the
+  // library (same id) are left alone; returns how many were added.
+  const handleRestoreBackup = (backup: unknown): number => {
+    if (!Array.isArray(backup)) return -1;
+    const existing = new Set(scripts.map((s) => s.id));
+    const restored: Script[] = backup
+      .filter(
+        (s: any) =>
+          !!s && typeof s === 'object' && typeof s.id === 'string' && typeof s.title === 'string' &&
+          typeof s.content === 'string' && !existing.has(s.id)
+      )
+      .map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        content: s.content,
+        episodeTag: typeof s.episodeTag === 'string' ? s.episodeTag : undefined,
+        category: s.category === 'template' ? 'template' : 'draft',
+        pacingWpm: typeof s.pacingWpm === 'number' ? s.pacingWpm : 150,
+        updatedAt: typeof s.updatedAt === 'string' ? s.updatedAt : '',
+        wordCount: typeof s.wordCount === 'number' ? s.wordCount : 0,
+        estimatedReadTime: typeof s.estimatedReadTime === 'string' ? s.estimatedReadTime : '',
+      }));
+    if (restored.length > 0) {
+      setScripts((prev) => [...prev, ...restored]);
+      restored.forEach((s) => persistScriptToCloud(s));
+    }
+    return restored.length;
   };
 
   const handleDeleteScript = async (scriptId: string) => {
@@ -330,7 +377,7 @@ export default function App() {
       episodeTag: 'Imported .txt',
       category: 'draft',
       pacingWpm: 150,
-      updatedAt: 'Just now',
+      updatedAt: nowStamp(),
       wordCount: words,
       estimatedReadTime: `${m}m ${s.toString().padStart(2, '0')}s`,
       content,
@@ -454,36 +501,13 @@ export default function App() {
                 <button
                   onClick={() => handleNavigate('overview')}
                   className="font-label-meta text-xs text-ink-soft uppercase tracking-wider hover:text-ink transition-colors cursor-pointer flex items-center gap-1.5"
-                  title="View Landing Page"
+                  title="Back to the home page"
                 >
                   <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                  <span>Workspace</span>
+                  <span>Home</span>
                 </button>
-                <span className="text-paper-line-strong">/</span>
-                <span className="font-label-meta text-xs text-ink font-semibold">
-                  {currentView === 'editor' ? 'Script Editor' : 'Library'}
-                </span>
               </div>
-
-              <div className="flex items-center gap-4">
-                {user ? (
-                  <div
-                    className="w-8 h-8 rounded-full bg-forest text-on-forest flex items-center justify-center font-bold text-xs shadow-xs"
-                    title={`Logged in as ${user.email} (Database Connected)`}
-                  >
-                    {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                ) : (
-                  <button
-                    onClick={signInWithGoogle}
-                    className="px-3 py-1.5 rounded-lg bg-paper-sunk hover:bg-paper-line/40 text-ink font-body-sm text-xs font-medium border border-paper-line flex items-center gap-1.5 cursor-pointer transition-colors"
-                    title="Sign in with Google to sync with database"
-                  >
-                    <span className="material-symbols-outlined text-[16px] text-forest">cloud</span>
-                    <span>Sign in</span>
-                  </button>
-                )}
-              </div>
+              {/* Sign-in and account live in the sidebar */}
             </header>
 
             {/* Dashboard Content */}
@@ -499,6 +523,8 @@ export default function App() {
                   onDeleteScript={handleDeleteScript}
                   onImportScript={handleImportScript}
                   onExportAllJson={handleExportAllJson}
+                  onUseTemplate={handleUseTemplate}
+                  onRestoreBackup={handleRestoreBackup}
                 />
               ) : (
                 <ScriptEditorView
