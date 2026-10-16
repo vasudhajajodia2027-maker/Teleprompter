@@ -134,54 +134,81 @@ export function buildSpeechTokens(words: string[]): SpeechToken[] {
   return tokens;
 }
 
-// Last few normalized words from a recognition event, newest last. Uses only
-// the top guess of each result and includes unfinished (interim) results, so
-// the script keeps moving mid-sentence instead of waiting for a pause.
-export function tailTokensFromResults(transcripts: string[], count = 6): string[] {
-  const all: string[] = [];
-  for (const t of transcripts) all.push(...normalizeText(t));
+// One normalized token from what the speaker said. `word` is the index of the
+// spoken word it came from: a contraction like "it's" becomes two tokens
+// ("it", "is") from ONE spoken word, and must count as one word of evidence.
+export interface HeardToken {
+  norm: string;
+  word: number;
+}
+
+// Last few tokens from a recognition event, newest last. Uses only the top
+// guess of each result and includes unfinished (interim) results, so the
+// script keeps moving mid-sentence instead of waiting for a pause.
+export function tailTokensFromResults(transcripts: string[], count = 8): HeardToken[] {
+  const all: HeardToken[] = [];
+  let word = 0;
+  for (const t of transcripts) {
+    for (const spoken of t.trim().split(/\s+/).filter(Boolean)) {
+      const norms = normalizeText(spoken);
+      if (norms.length === 0) continue;
+      for (const norm of norms) all.push({ norm, word });
+      word++;
+    }
+  }
   return all.slice(-count);
 }
 
-// Matches within this many words ahead count as "reading on".
+// Matches within this many tokens ahead count as "reading on".
 const NEAR_WINDOW = 40;
 // A jump further ahead (the speaker skipped a section) needs at least this many
-// heard words in a row matching the script, since short phrases repeat.
-const FAR_MIN_RUN = 4;
+// spoken words in a row matching the script, since short phrases repeat.
+const FAR_MIN_WORDS = 4;
 
 // Returns the new position (index of the next speech token to say). Never moves
 // backward; returns `position` unchanged when the heard words don't match.
-export function advanceSpeechPosition(tokens: SpeechToken[], position: number, heard: string[]): number {
+// Evidence is counted in spoken words, so one off-script contraction can't
+// count as a two-word match.
+export function advanceSpeechPosition(
+  tokens: SpeechToken[],
+  position: number,
+  heardInput: HeardToken[] | string[]
+): number {
+  const heard: HeardToken[] = heardInput.map((h, i) =>
+    typeof h === 'string' ? { norm: h, word: i } : h
+  );
   if (heard.length === 0 || tokens.length === 0) return position;
   const last = heard[heard.length - 1];
-  let near = { pos: position, run: 0 };
-  let far = { pos: position, run: 0 };
+  const lastWordLength = heard.filter((h) => h.word === last.word).reduce((n, h) => n + h.norm.length, 0);
+  let near = { pos: position, words: 0 };
+  let far = { pos: position, words: 0 };
 
-  // Try each script token as the landing spot for the newest heard word.
+  // Try each script token as the landing spot for the newest heard token.
   for (let j = Math.max(0, position - 1); j < tokens.length; j++) {
     let run = 0;
     while (
       run < heard.length &&
       j - run >= 0 &&
-      fuzzyWordMatch(heard[heard.length - 1 - run], tokens[j - run].norm)
+      fuzzyWordMatch(heard[heard.length - 1 - run].norm, tokens[j - run].norm)
     ) {
       run++;
     }
     if (run === 0) continue;
+    const words = new Set(heard.slice(heard.length - run).map((h) => h.word)).size;
 
     if (j - position <= NEAR_WINDOW) {
-      // One matching word is only trusted when it is long and right next to us.
-      const trustedSingle = run === 1 && last.length >= 5 && j - position <= 2;
-      if ((run >= 2 || trustedSingle) && run > near.run) near = { pos: j + 1, run };
-    } else if (run >= FAR_MIN_RUN && run > far.run) {
+      // One spoken word is only trusted when it is long and right next to us.
+      const trustedSingle = words === 1 && lastWordLength >= 5 && j - position <= 2;
+      if ((words >= 2 || trustedSingle) && words > near.words) near = { pos: j + 1, words };
+    } else if (words >= FAR_MIN_WORDS && words > far.words) {
       // Earliest strongest match wins, so a later repeat of the phrase doesn't.
-      far = { pos: j + 1, run };
+      far = { pos: j + 1, words };
     }
   }
 
   // Reading on is the usual case; jump ahead only when the far match is
   // clearly better than anything nearby.
   let best = near.pos;
-  if (far.run > 0 && (near.run === 0 || far.run >= near.run + 2)) best = far.pos;
+  if (far.words > 0 && (near.words === 0 || far.words >= near.words + 2)) best = far.pos;
   return Math.max(position, Math.min(best, tokens.length));
 }

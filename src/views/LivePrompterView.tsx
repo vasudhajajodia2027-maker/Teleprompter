@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Script } from '../types';
-import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, normalizeText } from '../lib/voiceMatch';
+import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults } from '../lib/voiceMatch';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -76,7 +76,6 @@ interface ScriptWord {
   paragraphIndex: number;
   wordInPara: number;
   original: string;
-  normalized: string;
 }
 
 interface LivePrompterViewProps {
@@ -314,13 +313,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     paragraphs.forEach((para, paraIdx) => {
       const wordsInPara = para.split(/\s+/).filter(Boolean);
       wordsInPara.forEach((word, wordIdx) => {
-        const normArray = normalizeText(word);
         list.push({
           globalIndex: globalIdx++,
           paragraphIndex: paraIdx,
           wordInPara: wordIdx,
           original: word,
-          normalized: normArray[0] || word.toLowerCase().replace(/[^a-z0-9]/g, ''),
         });
       });
     });
@@ -784,7 +781,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         }
         const heard = tailTokensFromResults(transcripts);
         if (heard.length === 0) return;
-        setLastRecognizedPhrase(heard.slice(-4).join(' '));
+        setLastRecognizedPhrase(heard.slice(-4).map((h) => h.norm).join(' '));
 
         const prevPos = speechPosRef.current;
         const nextPos = advanceSpeechPosition(speechTokens, prevPos, heard);
@@ -1103,15 +1100,32 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     };
   }, [isRecording, isPaused]);
 
+  // Release everything only when the studio closes. This must not depend on
+  // `takes`: re-running on each new take would revoke earlier takes' videos
+  // and switch the camera off between takes.
+  const takesRef = useRef<PrompterTake[]>(takes);
+  takesRef.current = takes;
+  const cleanupWebAudioRef = useRef(cleanupWebAudio);
+  cleanupWebAudioRef.current = cleanupWebAudio;
   useEffect(() => {
     return () => {
-      takes.forEach((t) => URL.revokeObjectURL(t.url));
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.onstop = null;
+        try {
+          recorder.stop();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+      takesRef.current.forEach((t) => URL.revokeObjectURL(t.url));
       if (webcamStreamRef.current) {
         webcamStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      cleanupWebAudio();
+      cleanupWebAudioRef.current();
     };
-  }, [takes, cleanupWebAudio]);
+  }, []);
 
   const handleDownloadTake = (take: PrompterTake) => {
     const ext = take.mimeType.includes('mp4') ? 'mp4' : 'webm';
@@ -1149,6 +1163,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+        return;
+      }
+      // While a take, the takes list or help is open, keys belong to that
+      // window (Space pauses the video); only Escape (close) passes through.
+      if ((previewTake || showTakesModal || showHelpModal) && e.code !== 'Escape') {
         return;
       }
 
