@@ -22,9 +22,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const [content, setContent] = useState(script.content);
   const [pacingWpm, setPacingWpm] = useState(script.pacingWpm || 150);
   const [saveStatus, setSaveStatus] = useState('Saved locally just now');
-  const [micDb, setMicDb] = useState(-24);
-  const [vuHeights, setVuHeights] = useState([20, 40, 65, 85, 50, 25, 15, 45, 70, 30, 10, 10]);
-  const [isMirrorInverted, setIsMirrorInverted] = useState(false);
   const [showProTip, setShowProTip] = useState(true);
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -36,7 +33,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const formattedReadTime = `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
-  const quotaPercent = Math.min((totalSeconds / 120) * 100, 100);
 
   // Sync state changes with parent
   useEffect(() => {
@@ -142,18 +138,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  // VU Meter audio simulation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const randDb = -18 - Math.floor(Math.random() * 16);
-      setMicDb(randDb);
-      setVuHeights(
-        Array.from({ length: 12 }, () => Math.floor(Math.random() * 75) + 15)
-      );
-    }, 300);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="flex flex-col w-full pb-16">
@@ -287,13 +271,13 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   info
                 </span>
                 <div className="flex flex-col gap-0.5">
-                  <h2 className="font-body-sm text-sm font-semibold text-ink">Voice Tracker Cue Active</h2>
+                  <h2 className="font-body-sm text-sm font-semibold text-ink">Notes to yourself</h2>
                   <p className="font-body-sm text-xs text-on-secondary-container leading-relaxed">
-                    Words surrounded by brackets like{' '}
+                    Text in brackets like{' '}
                     <code className="font-label-meta text-[11px] bg-paper-raised px-1 py-0.5 rounded text-ink border border-paper-line">
                       [PAUSE]
                     </code>{' '}
-                    will pause automatic scroll recognition until you resume speaking.
+                    shows in the prompter as a reminder. You don’t need to read it aloud.
                   </p>
                 </div>
               </div>
@@ -347,14 +331,14 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             )}
           </main>
 
-          {/* Right Metarail: Teleprompter Pre-Flight & Configuration */}
+          {/* Right Metarail: reading pace & script actions */}
           <aside className="lg:col-span-4 flex flex-col gap-6">
             {/* Speech Pace Configuration Card */}
             <div className="bg-paper-raised rounded-xl p-6 flex flex-col gap-5 border border-paper-line shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[20px] text-forest">speed</span>
-                  <h2 className="font-title-md text-base sm:text-lg font-semibold text-ink">Pace Calibration</h2>
+                  <h2 className="font-title-md text-base sm:text-lg font-semibold text-ink">Reading pace</h2>
                 </div>
                 <span className="font-label-meta text-xs px-2.5 py-0.5 rounded bg-paper-sunk text-ink font-semibold border border-paper-line/50">
                   {pacingWpm} WPM
@@ -363,8 +347,8 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
 
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center text-ink-soft font-label-meta text-xs">
-                  <span>Conversational</span>
-                  <span>Brisk Delivery</span>
+                  <span>Sets the read-time estimate and the auto-scroll speed</span>
+                  
                 </div>
                 <input
                   type="range"
@@ -382,111 +366,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 </div>
               </div>
 
-              {/* Target Take Duration Gauge */}
-              <div className="bg-paper-sunk rounded-lg p-4 flex flex-col gap-2.5 border border-paper-line/50">
-                <div className="flex items-center justify-between">
-                  <span className="font-label-meta text-xs text-ink-soft uppercase tracking-wider">
-                    Free Tier Duration
-                  </span>
-                  <span className="font-label-meta text-xs text-forest font-bold">
-                    {formattedReadTime} / 2m 00s
-                  </span>
-                </div>
-
-                {/* Tactile Meter */}
-                <div className="w-full bg-paper-line rounded-full h-2 overflow-hidden flex">
-                  <div
-                    className={`h-full transition-all duration-300 ${
-                      quotaPercent > 90 ? 'bg-rec' : 'bg-forest'
-                    }`}
-                    style={{ width: `${quotaPercent}%` }}
-                  ></div>
-                </div>
-
-                <div className="flex items-center justify-between text-ink-soft font-label-meta text-xs pt-1">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px] text-forest">check_circle</span>
-                    Within optimal range
-                  </span>
-                  <span className="text-ink-faint">Max 2m per take</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Pre-Flight Audio Tester Card */}
-            <div className="bg-paper-raised rounded-xl p-6 flex flex-col gap-5 border border-paper-line shadow-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-forest">mic</span>
-                  <h2 className="font-title-md text-base sm:text-lg font-semibold text-ink">Microphone Pre-Flight</h2>
-                </div>
-                <span className="inline-flex items-center gap-1.5 font-label-meta text-[11px] text-forest font-bold bg-forest-tint px-2 py-0.5 rounded">
-                  ONLINE
-                </span>
-              </div>
-
-              <p className="font-body-sm text-xs text-ink-soft leading-relaxed">
-                Test speech recognition levels before launching the prompter studio window.
-              </p>
-
-              {/* Visual Audio VU Meter Simulation */}
-              <div className="bg-paper-sunk rounded-lg p-3.5 flex flex-col gap-2 border border-paper-line/50">
-                <div className="flex items-center justify-between font-label-meta text-xs text-ink-soft">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-forest animate-pulse"></span>
-                    Built-in Mic (Default)
-                  </span>
-                  <span className="font-bold text-ink">{micDb} dB</span>
-                </div>
-
-                {/* Graphic EQ / VU Spectrum Bars */}
-                <div className="flex items-end gap-1 h-8 pt-1">
-                  {vuHeights.map((h, i) => (
-                    <div
-                      key={i}
-                      className={`flex-1 rounded-t-xs transition-all duration-150 ${
-                        h > 60 ? 'bg-forest' : h > 30 ? 'bg-forest/50' : 'bg-paper-line-strong'
-                      }`}
-                      style={{ height: `${h}%` }}
-                    ></div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Checklist */}
-              <div className="flex flex-col gap-2.5">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 rounded text-forest focus:ring-forest accent-forest cursor-pointer"
-                  />
-                  <span className="font-body-sm text-xs text-ink group-hover:text-forest transition-colors">
-                    Microphone permission granted
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 rounded text-forest focus:ring-forest accent-forest cursor-pointer"
-                  />
-                  <span className="font-body-sm text-xs text-ink group-hover:text-forest transition-colors">
-                    Speech pacing model pre-cached
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={isMirrorInverted}
-                    onChange={(e) => setIsMirrorInverted(e.target.checked)}
-                    className="w-4 h-4 rounded text-forest focus:ring-forest accent-forest cursor-pointer"
-                  />
-                  <span className="font-body-sm text-xs text-ink group-hover:text-forest transition-colors">
-                    Invert mirroring (for glass teleprompters)
-                  </span>
-                </label>
-              </div>
             </div>
 
             {/* Secondary Management Actions */}

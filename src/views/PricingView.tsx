@@ -77,7 +77,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                    <span>1080p local camera &amp; mic export</span>
+                    <span>Camera &amp; mic recording, saved to your computer</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
@@ -85,7 +85,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                    <span>Audio-synced speech pacing</span>
+                    <span>Script follows your voice</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
@@ -153,7 +153,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   <span className="font-label-meta text-xs text-ink-faint">Specs</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  First Take supports all modern evergreen browsers including Google Chrome, Apple Safari, Brave, Microsoft Edge, and Firefox on macOS, Windows, and Linux.
+                  First Take runs in all modern browsers on macOS, Windows, and Linux. Word-by-word voice follow works best in Google Chrome and Microsoft Edge. In browsers without speech recognition, such as Firefox, the script follows the sound of your voice instead.
                 </p>
               </div>
 
@@ -166,7 +166,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   <span className="font-label-meta text-xs text-ink-faint">Formats</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  Exports are processed locally inside browser memory as standard <strong>.MP4</strong> or <strong>.WebM</strong> video files. Files are directly saved to your computer’s Downloads folder.
+                  Takes are recorded in your browser as standard <strong>.WebM</strong> (Chrome, Edge, Firefox) or <strong>.MP4</strong> (Safari) video files. Files are directly saved to your computer’s Downloads folder.
                 </p>
               </div>
 
@@ -179,7 +179,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   <span className="font-label-meta text-xs text-ink-faint">Privacy</span>
                 </div>
                 <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
-                  Exclusively on your local disk inside your browser’s IndexedDB. We do not maintain any video servers or upload your takes.
+                  Videos stay in your browser until you download them. We never upload your takes. Scripts are saved in your browser, and synced to your account only if you sign in. To follow your voice, the browser’s speech recognition may send audio to its provider (for example Google in Chrome).
                 </p>
               </div>
 

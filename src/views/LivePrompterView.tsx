@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Script } from '../types';
-import { ASSETS } from '../data/defaultScripts';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -185,6 +184,9 @@ function fuzzyWordMatch(a: string, b: string): boolean {
   return false;
 }
 
+const MIC_BLOCKED_NOTICE =
+  'Your microphone is blocked, so the script can’t follow your voice. Allow the mic for this site, or switch to steady auto-scroll.';
+
 export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   script,
   onExit,
@@ -279,6 +281,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+  const [micBlocked, setMicBlocked] = useState<boolean>(false);
   const [lastRecognizedPhrase, setLastRecognizedPhrase] = useState<string>('');
   const [micVisualLevels, setMicVisualLevels] = useState<number[]>([0.1, 0.1, 0.1, 0.1, 0.1]);
 
@@ -305,6 +308,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const rafIdRef = useRef<number | null>(null);
   const lastRafTimeRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<any>(null);
+  const countdownIntervalRef = useRef<any>(null);
 
   // Web Audio API refs for hybrid volume-based scrolling
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -510,8 +514,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         webcamStreamRef.current = stream;
+        setMicBlocked(false);
       } catch (err) {
         console.warn('Microphone stream error for Web Audio:', err);
+        setMicBlocked(true);
+        setVoiceNotice(MIC_BLOCKED_NOTICE);
         return;
       }
     }
@@ -776,7 +783,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
-      setVoiceNotice('Speech recognition is not supported in this browser. Volume-based voice scrolling is rolling with your voice.');
+      setVoiceNotice('This browser can’t recognize words, so the script follows the sound of your voice instead. Chrome or Edge track words best.');
       return;
     }
 
@@ -936,14 +943,16 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           return;
         }
 
-        if (err === 'not-allowed' || err === 'service-not-allowed') {
-          setVoiceNotice('Microphone blocked for Speech Recognition. Allow the mic or open the app in its own tab. Volume-based voice scrolling remains active.');
+        if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
+          // No mic means neither word matching nor volume scrolling can run; stop retrying.
+          recognitionRef.current = null;
+          setIsListening(false);
+          setMicBlocked(true);
+          setVoiceNotice(err === 'audio-capture' ? 'No microphone found. Plug one in, or switch to steady auto-scroll.' : MIC_BLOCKED_NOTICE);
         } else if (err === 'network') {
-          setVoiceNotice('Speech recognition service unreachable. Volume-based voice scrolling is rolling smoothly with your voice.');
-        } else if (err === 'audio-capture') {
-          setVoiceNotice('No microphone found.');
+          setVoiceNotice('Word tracking is offline right now, so the script follows the sound of your voice instead.');
         } else {
-          setVoiceNotice(`Speech recognition notice: ${err || 'Audio input interrupted'}. Volume scrolling active.`);
+          setVoiceNotice('Word tracking paused for a moment. The script still follows the sound of your voice.');
         }
       };
 
@@ -971,7 +980,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       recognitionRef.current = recognition;
     } catch (err: any) {
       console.warn('Speech recognition init error:', err);
-      setVoiceNotice('Speech recognition not available. Volume-based voice scrolling is rolling with your voice.');
+      setVoiceNotice('Word tracking couldn’t start, so the script follows the sound of your voice instead.');
     }
 
     return () => {
@@ -1159,23 +1168,33 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     setIsPaused(true);
   };
 
+  const cancelCountdown = () => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setCountdown(null);
+  };
+
   const handleToggleRecord = () => {
     if (isRecording) {
       stopRecordingStream();
     } else {
+      if (countdownIntervalRef.current) return; // countdown already running
       setCountdown(3);
-      const cdInterval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev === null || prev <= 1) {
-            clearInterval(cdInterval);
-            setTimeout(() => {
-              setCountdown(null);
-              startRecordingStream();
-            }, 400);
-            return null;
-          }
-          return prev - 1;
-        });
+      let remaining = 3;
+      countdownIntervalRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          setCountdown(remaining);
+          return;
+        }
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+        setCountdown(null);
+        // Every take starts from the first line of the script.
+        handleRestartFromTop();
+        startRecordingStream();
       }, 1000);
     }
   };
@@ -1256,10 +1275,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       } else if (e.code === 'KeyV') {
         e.preventDefault();
         setScrollMode((prev) => (prev === 'voice' ? 'auto' : 'voice'));
-      } else if (e.code === 'ArrowUp') {
+      } else if (e.code === 'ArrowUp' && scrollModeRef.current === 'auto') {
         e.preventDefault();
         setBaseWpm((prev) => Math.min(220, prev + 5));
-      } else if (e.code === 'ArrowDown') {
+      } else if (e.code === 'ArrowDown' && scrollModeRef.current === 'auto') {
         e.preventDefault();
         setBaseWpm((prev) => Math.max(80, prev - 5));
       } else if (e.key === '+' || e.key === '=') {
@@ -1273,13 +1292,18 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         setShowHelpModal((prev) => !prev);
       } else if (e.code === 'Escape') {
         e.preventDefault();
-        handleExit();
+        // Close an open panel first; only leave the studio when nothing is open.
+        if (previewTake) setPreviewTake(null);
+        else if (showHelpModal) setShowHelpModal(false);
+        else if (showTakesModal) setShowTakesModal(false);
+        else if (countdown !== null) cancelCountdown();
+        else handleExit();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRecording, takes, handleToggleRecord]);
+  }, [isRecording, takes, handleToggleRecord, previewTake, showHelpModal, showTakesModal, countdown]);
 
   const handleExit = () => {
     const hasUnsavedTakes = takes.some((t) => !t.isDownloaded);
@@ -1325,7 +1349,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             Focus eyes on lens • Prompter begins automatically
           </p>
           <button
-            onClick={() => setCountdown(null)}
+            onClick={cancelCountdown}
             className="mt-6 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs cursor-pointer"
           >
             Cancel Countdown (Esc)
@@ -1342,6 +1366,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <span>{cameraError || voiceNotice}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {micBlocked && scrollMode === 'voice' && (
+                <button
+                  onClick={() => {
+                    setScrollMode('auto');
+                    setVoiceNotice(null);
+                  }}
+                  className="px-2.5 py-1 rounded bg-forest hover:bg-forest-dark text-on-forest font-semibold font-body-sm text-[11px] shadow-2xs cursor-pointer"
+                >
+                  Use auto-scroll
+                </button>
+              )}
               {voiceNotice && (
                 <button
                   onClick={() => window.open(window.location.href, '_blank')}
@@ -1403,45 +1438,24 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             </span>
           </button>
 
-          {/* Voice vs Auto Mode Toggle */}
-          <div
-            className={`flex items-center rounded-full p-0.5 border text-xs font-label-meta ${
-              isNightMode ? 'bg-[#2A2724] border-[#3A3631]' : 'bg-paper-sunk border-paper-line'
-            }`}
-          >
+          {/* Auto-scroll is a fallback only; offer the way back to voice follow */}
+          {scrollMode === 'auto' && (
             <button
-              onClick={() => setScrollMode('voice')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
-                scrollMode === 'voice'
-                  ? 'bg-forest text-on-forest font-semibold shadow-xs'
-                  : isNightMode
-                  ? 'text-[#A39E92] hover:text-[#FAF7F0]'
-                  : 'text-ink-soft hover:text-ink'
+              onClick={() => {
+                setMicBlocked(false);
+                setScrollMode('voice');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-label-meta cursor-pointer transition-colors ${
+                isNightMode
+                  ? 'bg-[#2A2724] border-[#3A3631] text-[#FAF7F0] hover:text-primary-fixed'
+                  : 'bg-paper-raised border-paper-line text-ink hover:text-forest'
               }`}
-              title="Speech-responsive: moves smoothly as you speak (V)"
-            >
-              <span className="material-symbols-outlined text-[15px]">hearing</span>
-              <span>Voice Follow</span>
-              {scrollMode === 'voice' && !isPaused && isSpeaking && (
-                <span className="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-ping"></span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setScrollMode('auto')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
-                scrollMode === 'auto'
-                  ? 'bg-forest text-on-forest font-semibold shadow-xs'
-                  : isNightMode
-                  ? 'text-[#A39E92] hover:text-[#FAF7F0]'
-                  : 'text-ink-soft hover:text-ink'
-              }`}
-              title="Continuous speed scroll based on WPM (V)"
+              title="Switch back to voice follow"
             >
               <span className="material-symbols-outlined text-[15px]">speed</span>
-              <span>Auto Scroll</span>
+              <span>Auto-scroll on · Back to voice follow</span>
             </button>
-          </div>
+          )}
 
           {/* 3. Language / Accent Selector with en-IN as DEFAULT */}
           {scrollMode === 'voice' && (
@@ -1487,8 +1501,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 }`}
               ></span>
               <span>
-                {isPaused
-                  ? 'Paused (silence)'
+                {micBlocked
+                  ? 'Mic blocked'
+                  : isPaused
+                  ? 'Paused'
                   : isSpeaking
                   ? 'Speaking'
                   : 'Listening'}
@@ -1496,7 +1512,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             </div>
           )}
 
-          {/* Recorded Takes Counter Chip */}
+          {/* Recorded Takes Chip (only once there is something to see) */}
+          {takes.length > 0 && (
           <button
             onClick={() => setShowTakesModal(true)}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-label-meta cursor-pointer transition-colors ${
@@ -1514,34 +1531,20 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
             )}
           </button>
+          )}
         </div>
 
-        {/* Center: Real Pacing / Progress Telemetry */}
+        {/* Center: progress */}
         <div className="hidden xl:flex items-center gap-4">
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-label-meta ${
               isNightMode ? 'bg-[#2A2724] border-[#3A3631] text-[#FAF7F0]' : 'bg-paper-raised border-paper-line text-ink'
             }`}
           >
-            <span className="text-forest font-semibold">{effectiveWpm} WPM</span>
-            <span className="text-ink-faint">•</span>
             <span>{remainingSeconds > 0 ? `${formatTime(remainingSeconds)} left` : 'Finished'}</span>
             <span className="text-ink-faint">•</span>
             <span className="text-ink-soft">{progressPercent}%</span>
           </div>
-
-          <button
-            onClick={handleRestartFromTop}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-label-meta cursor-pointer transition-colors ${
-              isNightMode
-                ? 'bg-[#2A2724] border-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0]'
-                : 'bg-paper-sunk border-paper-line text-ink-soft hover:text-ink'
-            }`}
-            title="Scroll back to first sentence"
-          >
-            <span className="material-symbols-outlined text-[15px]">restart_alt</span>
-            <span>Restart</span>
-          </button>
         </div>
 
         {/* Right: Help, Script Title & Safe Exit */}
@@ -1597,20 +1600,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             }`}
           />
 
-          <img
-            alt="Studio camera speaker"
-            className={`w-full h-full object-cover grayscale-[15%] contrast-105 absolute inset-0 transition-opacity duration-200 ${
-              useLiveWebcam ? 'opacity-0 pointer-events-none z-0' : 'opacity-100 z-10'
-            }`}
-            src={ASSETS.liveCameraSpeaker}
-          />
+          {!useLiveWebcam && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 text-white/60">
+              <span className="material-symbols-outlined text-[28px]">videocam_off</span>
+              <span className="font-label-meta text-[10px] uppercase tracking-wider">Camera off</span>
+            </div>
+          )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-night-paper/85 via-transparent to-night-paper/40 pointer-events-none z-15"></div>
 
           <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white z-20">
             <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : 'bg-forest'}`}></span>
             <span className="font-label-meta text-[9px] tracking-wider uppercase font-bold">
-              {useLiveWebcam ? 'WEBCAM' : 'STUDIO PREVIEW'}
+              {useLiveWebcam ? 'WEBCAM' : 'PREVIEW'}
             </span>
           </div>
 
@@ -1665,7 +1667,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-forest animate-ping"></span>
                 )}
                 <span className="font-label-meta text-[9px] text-white/80 uppercase font-semibold">
-                  {isSpeaking ? 'SPEAKING' : isListening ? 'LISTENING' : 'MIC STANDBY'}
+                  {micBlocked ? 'MIC BLOCKED' : isSpeaking ? 'SPEAKING' : isListening ? 'LISTENING' : 'MIC STANDBY'}
                 </span>
               </div>
             </div>
@@ -1693,14 +1695,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         style={{ top: '33vh' }}
         className="fixed left-0 right-0 z-20 pointer-events-none flex items-center justify-between px-4 sm:px-12"
       >
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-forest text-on-forest font-label-meta text-[11px] uppercase tracking-wider font-bold shadow-md opacity-90">
-          <span className="material-symbols-outlined text-[14px]">arrow_right_alt</span>
-          <span>Reading Guide</span>
-        </div>
-        <div className="flex-1 mx-4 h-[1.5px] bg-gradient-to-r from-forest via-forest/60 to-transparent"></div>
-        <span className="font-label-meta text-[10px] uppercase text-forest font-semibold opacity-75 hidden md:inline">
-          Eyes Near Camera Axis
-        </span>
+        <span className="material-symbols-outlined text-[18px] text-forest opacity-70">arrow_right</span>
+        <div className="flex-1 mx-2 h-[1px] bg-gradient-to-r from-forest/50 via-forest/20 to-transparent"></div>
       </div>
 
       {/* ============================================================== */}
@@ -1783,6 +1779,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                         {scrollMode === 'voice'
                           ? isSpeaking
                             ? 'Speaking (Scrolling)...'
+                            : micBlocked
+                            ? 'Mic blocked'
                             : isPaused
                             ? 'Voice paused'
                             : 'Listening for speech'
@@ -1860,13 +1858,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <span className="material-symbols-outlined text-[20px]">
                 {isPaused ? 'play_arrow' : 'pause'}
               </span>
-              <span>{isPaused ? 'Roll' : 'Pause'}</span>
+              <span>{isPaused ? 'Start' : 'Pause'}</span>
             </button>
           </div>
 
+          {/* 2. Speed controls exist only for the auto-scroll fallback */}
+          {scrollMode === 'auto' && (
+          <>
           <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
-
-          {/* 2. Speed Mode 1 / 2 / 3 & Fine WPM Slider */}
           <div className="flex flex-col gap-1 flex-1 min-w-[200px] max-w-[240px]">
             <div className="flex justify-between items-center font-label-meta text-[11px]">
               <div className="flex items-center gap-1">
@@ -1906,6 +1905,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               title="Fine WPM pace adjuster (Arrow Up/Down)"
             />
           </div>
+          </>
+          )}
 
           <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
 
@@ -1963,24 +1964,6 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           </div>
         </div>
 
-        {/* Keyboard Shortcuts Hint */}
-        <div
-          className={`flex flex-wrap items-center justify-center gap-3 font-label-meta text-[11px] px-4 py-1 rounded-full backdrop-blur-sm border ${
-            isNightMode
-              ? 'bg-[#2A2724]/80 text-[#A39E92] border-[#3A3631]'
-              : 'bg-paper/85 text-ink-soft border-paper-line/50'
-          }`}
-        >
-          <span><kbd className="px-1 py-0.5 rounded bg-paper-raised text-ink text-[10px] font-bold border border-paper-line">Space</kbd> roll/pause</span>
-          <span>•</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-paper-raised text-ink text-[10px] font-bold border border-paper-line">R</kbd> record</span>
-          <span>•</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-paper-raised text-ink text-[10px] font-bold border border-paper-line">V</kbd> voice follow</span>
-          <span>•</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-paper-raised text-ink text-[10px] font-bold border border-paper-line">M</kbd> mirror</span>
-          <span>•</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-paper-raised text-ink text-[10px] font-bold border border-paper-line">?</kbd> shortcuts</span>
-        </div>
       </div>
 
       {/* ============================================================== */}
@@ -2171,7 +2154,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">R</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Toggle Voice Follow / Auto Scroll</span>
+                <span className="text-ink-soft">Switch voice follow / steady auto-scroll</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">V</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
@@ -2179,7 +2162,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">M</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Adjust WPM speed</span>
+                <span className="text-ink-soft">Adjust speed (auto-scroll only)</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">↑ / ↓</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
