@@ -86,7 +86,7 @@ export default function App() {
     } else if (currentView === 'pricing') {
       document.title = 'Pricing — First Take Studio';
     } else if (currentView === 'checkout') {
-      document.title = 'Secure Waitlist — First Take Studio';
+      document.title = 'Join the Waitlist — First Take Studio';
     } else {
       document.title = 'First Take Studio — Speech-Responsive Teleprompter';
     }
@@ -466,10 +466,6 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-paper-sunk font-label-meta text-xs text-ink-soft border border-paper-line/50">
-                  <span className="material-symbols-outlined text-[16px] text-forest">mic</span>
-                  <span>Auto-Scroll Active</span>
-                </div>
                 {user ? (
                   <div
                     className="w-8 h-8 rounded-full bg-forest text-on-forest flex items-center justify-center font-bold text-xs shadow-xs"

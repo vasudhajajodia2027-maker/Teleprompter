@@ -25,22 +25,25 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
   onImportScript,
   onExportAllJson,
 }) => {
-  const [checklist, setChecklist] = useState({
-    mic: true,
-    cam: true,
-    testRead: false,
-    recordedTake: false,
-  });
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [sortOption, setSortOption] = useState<'lastEdited' | 'wordCount'>('lastEdited');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Count from the text itself so the library always matches the editor.
+  const countWords = (content: string) => (content.trim() ? content.trim().split(/\s+/).length : 0);
+  const readTime = (content: string, wpm: number) => {
+    const s = Math.round((countWords(content) / (wpm || 150)) * 60);
+    return `${Math.floor(s / 60)}m ${(s % 60).toString().padStart(2, '0')}s`;
+  };
+
   // Active script (hero card)
   const activeScript = scripts.find((s) => s.category === 'active') || scripts[0];
   const draftScripts = scripts.filter((s) => s.id !== activeScript?.id);
-
-  const completedStepsCount = Object.values(checklist).filter(Boolean).length;
+  // Default is library order (newest first); "Word Count" puts the longest first.
+  if (sortOption === 'wordCount') {
+    draftScripts.sort((a, b) => countWords(b.content) - countWords(a.content));
+  }
 
   const handleFileUpload = (file: File) => {
     if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
@@ -70,24 +73,11 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
         {/* Top Action & Title Header */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="font-label-eyebrow text-xs uppercase text-forest font-bold tracking-widest bg-forest-tint px-2.5 py-1 rounded">
-                Editorial Library
-              </span>
-              <span className="font-label-meta text-xs text-ink-faint">/app/scripts</span>
-            </div>
             <h1 className="font-headline-lg text-3xl sm:text-4xl text-ink font-medium tracking-tight font-display">
               My Scripts
             </h1>
             <p className="font-label-meta text-xs text-ink-soft flex items-center gap-2">
-              <span>{scripts.length} scripts saved</span>
-              <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
-              <span className="text-forest font-semibold">
-                {license.isActive ? 'Pro Lifetime' : 'Free plan'}
-              </span>
-              <span className="text-ink-faint">
-                ({scripts.filter((s) => s.category === 'active').length}/{license.isActive ? '∞' : '1'} active slot utilized)
-              </span>
+              <span>{scripts.length} {scripts.length === 1 ? 'script' : 'scripts'} saved</span>
             </p>
           </div>
 
@@ -118,120 +108,6 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
           </div>
         </header>
 
-        {/* Onboarding Checklist Banner */}
-        <section className="bg-paper-raised rounded-xl p-7 shadow-xs border border-paper-line relative overflow-hidden">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            {/* Left: Context & Progress */}
-            <div className="space-y-4 max-w-md">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-forest-tint flex items-center justify-center text-forest">
-                  <span className="material-symbols-outlined text-[20px]">movie_edit</span>
-                </div>
-                <div>
-                  <h2 className="font-title-md text-base sm:text-lg text-ink font-semibold">
-                    Get ready for your first take
-                  </h2>
-                  <span className="font-label-meta text-xs text-forest font-bold">
-                    {completedStepsCount} of 4 steps complete
-                  </span>
-                </div>
-              </div>
-              <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                Calibrate ambient noise and establish eye contact before entering live voice-tracking mode.
-              </p>
-              {/* Native Gauge Progress Indicator */}
-              <div className="w-full bg-paper-sunk h-2 rounded-full overflow-hidden border border-paper-line/50">
-                <div
-                  className="bg-forest h-full rounded-full transition-all duration-500"
-                  style={{ width: `${(completedStepsCount / 4) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Right: Interactive Checklist Steps */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:w-[560px]">
-              {/* Item 1: Complete */}
-              <div className="flex items-center gap-3 p-3.5 rounded-lg bg-paper-sunk/60 text-ink border border-paper-line/50">
-                <div className="w-5 h-5 rounded bg-forest text-on-forest flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[16px]">check</span>
-                </div>
-                <span className="font-body-sm text-sm line-through text-ink-soft">Allow microphone access</span>
-              </div>
-
-              {/* Item 2: Complete */}
-              <div className="flex items-center gap-3 p-3.5 rounded-lg bg-paper-sunk/60 text-ink border border-paper-line/50">
-                <div className="w-5 h-5 rounded bg-forest text-on-forest flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[16px]">check</span>
-                </div>
-                <span className="font-body-sm text-sm line-through text-ink-soft">Allow camera access</span>
-              </div>
-
-              {/* Item 3: Interactive Test Read */}
-              <button
-                onClick={() => {
-                  setChecklist((prev) => ({ ...prev, testRead: !prev.testRead }));
-                }}
-                className={`flex items-center justify-between p-3.5 rounded-lg transition-all text-left group cursor-pointer border ${
-                  checklist.testRead
-                    ? 'bg-paper-sunk/60 border-paper-line/50'
-                    : 'bg-paper-sunk hover:bg-forest-tint border-paper-line'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-5 h-5 rounded shrink-0 flex items-center justify-center ${
-                      checklist.testRead ? 'bg-forest text-on-forest' : 'bg-paper-raised border border-paper-line'
-                    }`}
-                  >
-                    {checklist.testRead && <span className="material-symbols-outlined text-[16px]">check</span>}
-                  </div>
-                  <span
-                    className={`font-body-sm text-sm font-medium ${
-                      checklist.testRead ? 'line-through text-ink-soft' : 'text-ink'
-                    }`}
-                  >
-                    Do a 10-second test read
-                  </span>
-                </div>
-                <span className="material-symbols-outlined text-[18px] text-ink-soft group-hover:text-forest transition-colors">
-                  {checklist.testRead ? 'replay' : 'arrow_forward'}
-                </span>
-              </button>
-
-              {/* Item 4: Record Take CTA */}
-              <button
-                onClick={() => {
-                  setChecklist((prev) => ({ ...prev, recordedTake: true }));
-                  if (activeScript) onOpenPrompter(activeScript.id);
-                }}
-                className={`flex items-center justify-between p-3.5 rounded-lg text-ink transition-all text-left cursor-pointer border ${
-                  checklist.recordedTake
-                    ? 'bg-paper-sunk/60 border-paper-line/50'
-                    : 'bg-paper-sunk hover:bg-forest-tint border-paper-line'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-5 h-5 rounded shrink-0 flex items-center justify-center ${
-                      checklist.recordedTake ? 'bg-forest text-on-forest' : 'bg-paper-raised border border-paper-line'
-                    }`}
-                  >
-                    {checklist.recordedTake && <span className="material-symbols-outlined text-[16px]">check</span>}
-                  </div>
-                  <span
-                    className={`font-body-sm text-sm font-medium ${
-                      checklist.recordedTake ? 'line-through text-ink-soft' : 'text-ink'
-                    }`}
-                  >
-                    Record your first take
-                  </span>
-                </div>
-                <span className="material-symbols-outlined text-[18px] text-forest">play_circle</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
         {/* Script Library Grid */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
@@ -261,9 +137,9 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                       </span>
                       <span className="font-label-meta text-xs text-ink-soft">{activeScript.updatedAt}</span>
                       <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
-                      <span className="font-label-meta text-xs text-ink-soft">{activeScript.wordCount} words</span>
+                      <span className="font-label-meta text-xs text-ink-soft">{countWords(activeScript.content)} words</span>
                       <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
-                      <span className="font-label-meta text-xs text-ink-soft">~{activeScript.estimatedReadTime} read</span>
+                      <span className="font-label-meta text-xs text-ink-soft">~{readTime(activeScript.content, activeScript.pacingWpm)} read</span>
                     </div>
 
                     <h4 className="font-headline-md text-2xl sm:text-3xl text-ink font-medium tracking-tight font-display">
@@ -278,24 +154,6 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Visual Cadence Waveform Metric */}
-                  <div className="bg-paper-sunk rounded-xl p-4 flex flex-col gap-3 min-w-[220px] border border-paper-line/50">
-                    <div className="flex items-center justify-between text-ink-soft font-label-meta text-xs">
-                      <span>Pacing Target</span>
-                      <span className="text-forest font-bold">{activeScript.pacingWpm} WPM</span>
-                    </div>
-
-                    {/* Mini SVG Sparkline */}
-                    <svg className="w-full h-8 text-forest" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 100 24">
-                      <path d="M0 12 Q 10 2, 20 12 T 40 12 T 60 4 T 80 18 T 100 12" strokeLinecap="round" />
-                    </svg>
-
-                    <div className="flex items-center justify-between text-ink-faint font-label-meta text-[11px]">
-                      <span>Intro</span>
-                      <span>Climax</span>
-                      <span>Outro</span>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between pt-4 gap-4 bg-paper-sunk/20 -mx-8 -mb-8 p-6 rounded-b-xl border-t border-paper-line/60">
@@ -375,11 +233,11 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-ink-soft font-label-meta text-xs">
                     <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]">notes</span> {script.wordCount} words
+                      <span className="material-symbols-outlined text-[16px]">notes</span> {countWords(script.content)} words
                     </span>
                     <span className="inline-block w-1 h-1 rounded-full bg-paper-line-strong"></span>
                     <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]">schedule</span> ~{script.estimatedReadTime}
+                      <span className="material-symbols-outlined text-[16px]">schedule</span> ~{readTime(script.content, script.pacingWpm)}
                     </span>
                   </div>
 

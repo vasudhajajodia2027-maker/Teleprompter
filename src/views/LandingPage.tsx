@@ -80,7 +80,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           {/* Subtext under hero button - says 'nothing is uploaded' once */}
           <p className="font-label-meta text-xs text-ink-faint pt-1">
-            Runs in your browser. Free demo, no account needed. Nothing is uploaded.
+            Runs in your browser. Free demo, no account needed. Your videos stay on your computer.
           </p>
         </div>
 
@@ -236,7 +236,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-forest"></span>
-                  <span>SPEECH ENGINE: ON-DEVICE</span>
+                  <span>VIDEO: SAVED ON YOUR DEVICE</span>
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
-                    Microphone audio tracks your phonetic position in real time. The highlight stays anchored on your actual voice.
+                    Your microphone tracks which words you have said. The highlight stays anchored on your actual voice.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
@@ -319,7 +319,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <li className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
-                    Zero latency. Audio processing and video capture happen locally inside your web browser.
+                    Video is recorded and saved right in your browser. It never goes to our servers.
                   </p>
                 </li>
               </ul>
@@ -372,11 +372,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span className="font-label-meta text-[32px] font-bold text-forest">02</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Press record &amp; speak</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
-                  Click the red capture shutter. As you talk, phonetic recognition moves the bright yellow marker forward smoothly across each clause.
+                  Click the red capture shutter. As you talk, the script recognizes your words and moves the bright yellow marker forward with you.
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-marker-soft font-label-meta text-xs text-ink flex items-center justify-between border border-marker-border/40">
-                <span className="font-medium">Phonetic matching</span>
+                <span className="font-medium">Follows your words</span>
                 <span className="material-symbols-outlined text-[18px] text-forest">mic</span>
               </div>
             </div>

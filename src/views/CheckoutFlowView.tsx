@@ -67,12 +67,12 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             <BrandLogo size="md" subtitleText="STUDIO" />
           </button>
 
-          {/* Right controls: 'SECURE CHECKOUT' lock badge + separate 'Support' link with clear spacing */}
+          {/* Right controls: 'WAITLIST' badge + separate 'Support' link with clear spacing */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-raised border border-paper-line text-ink-soft shadow-xs">
               <span className="material-symbols-outlined text-[15px] text-forest">lock</span>
               <span className="font-label-meta tracking-widest text-[11px] uppercase font-bold text-ink-soft">
-                SECURE CHECKOUT
+                WAITLIST
               </span>
             </div>
 
@@ -152,7 +152,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
-                    <span>1080p local camera &amp; mic export</span>
+                    <span>Camera &amp; mic recording, saved to your computer</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
@@ -160,7 +160,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
-                    <span>Audio-synced speech pacing</span>
+                    <span>Script follows your voice</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
@@ -222,7 +222,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0">shield</span>
-                <span className="font-label-meta text-xs font-semibold text-ink">Zero Server Uploads</span>
+                <span className="font-label-meta text-xs font-semibold text-ink">Videos stay on your device</span>
               </div>
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
                 <span className="material-symbols-outlined text-forest text-[20px] shrink-0">graphic_eq</span>
