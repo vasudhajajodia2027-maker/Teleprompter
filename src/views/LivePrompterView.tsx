@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { Script } from '../types';
 import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, describeWords } from '../lib/voiceMatch';
 import { createVoiceActivityDetector } from '../lib/voiceActivity';
@@ -88,6 +88,19 @@ interface LivePrompterViewProps {
   isPro?: boolean;
 }
 
+// Script text size: 24-96 px, changed in steps big enough to see.
+const FONT_MIN = 24;
+const FONT_MAX = 96;
+const FONT_STEP = 4;
+const clampFontSize = (px: number) =>
+  Number.isFinite(px) ? Math.min(FONT_MAX, Math.max(FONT_MIN, Math.round(px))) : 44;
+
+const TEXT_STYLES = [
+  { value: 'serif', label: 'Serif' },
+  { value: 'sans', label: 'Sans' },
+  { value: 'bold', label: 'Bold' },
+] as const;
+
 const MIC_BLOCKED_NOTICE =
   'Your microphone is blocked, so the script can’t follow your voice. Allow the mic for this site, or switch to steady auto-scroll.';
 
@@ -99,7 +112,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const [fontSize, setFontSize] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('ft_prompter_fontsize');
-      if (saved) return Math.min(80, Math.max(24, parseInt(saved, 10)));
+      if (saved) return clampFontSize(parseInt(saved, 10));
     } catch (e) {
       console.warn(e);
     }
@@ -123,7 +136,6 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       console.warn(e);
     }
   }, [textStyle]);
-  const TEXT_STYLE_LABEL = { serif: 'Serif', sans: 'Sans', bold: 'Bold' } as const;
   const nextTextStyle = (s: 'serif' | 'sans' | 'bold') => (s === 'serif' ? 'sans' : s === 'sans' ? 'bold' : 'serif');
 
   const [baseWpm, setBaseWpm] = useState<number>(() => {
@@ -681,6 +693,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   ]);
 
   // Scroll a specific line or word so it sits on the reading guide
+  // A new text size or style reflows every line. Keep the word being read on
+  // the reading guide (before paint, so the text never visibly jumps), whether
+  // the prompter is running or paused.
+  useLayoutEffect(() => {
+    const container = prompterContainerRef.current;
+    const wordEl = document.getElementById(`ft-word-${currentWordIndexRef.current}`);
+    if (!container || !wordEl) return;
+    const guideY = container.clientHeight * 0.33;
+    container.scrollTop += wordEl.getBoundingClientRect().top - container.getBoundingClientRect().top - guideY;
+  }, [fontSize, textStyle]);
+
   const scrollElementToGuide = useCallback((element: HTMLElement | null, behavior: ScrollBehavior = 'smooth') => {
     const container = prompterContainerRef.current;
     if (!container || !element) return;
@@ -1245,10 +1268,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         setBaseWpm((prev) => Math.max(80, prev - 5));
       } else if (e.key === '+' || e.key === '=') {
         e.preventDefault();
-        setFontSize((prev) => Math.min(80, prev + 2));
+        setFontSize((prev) => clampFontSize(prev + FONT_STEP));
       } else if (e.key === '-' || e.key === '_') {
         e.preventDefault();
-        setFontSize((prev) => Math.max(24, prev - 2));
+        setFontSize((prev) => clampFontSize(prev - FONT_STEP));
       } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         setShowHelpModal((prev) => !prev);
@@ -1692,7 +1715,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 id={`prompter-para-${paraIdx}`}
                 key={paraIdx}
                 onClick={() => handleLineClick(paraIdx)}
-                className={`relative px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
+                className={`relative px-4 py-3 rounded-xl transition-[background-color,color,opacity,box-shadow] duration-300 cursor-pointer ${
                   isActive
                     ? isNightMode
                       ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg scale-[1.01]'
@@ -1906,35 +1929,68 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               }`}
             >
               <button
-                onClick={() => setFontSize((prev) => Math.max(24, prev - 2))}
-                className="w-7 h-8 flex items-center justify-center rounded text-ink-soft hover:text-ink hover:bg-paper-raised transition-colors cursor-pointer"
-                title="Decrease font size (-)"
+                onClick={() => setFontSize((prev) => clampFontSize(prev - FONT_STEP))}
+                disabled={fontSize <= FONT_MIN}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg font-semibold transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                  isNightMode ? 'text-[#FAF7F0] hover:bg-[#4A453F]' : 'text-ink hover:bg-paper-raised'
+                }`}
+                title="Smaller text (-)"
+                aria-label="Smaller text"
               >
-                <span className="material-symbols-outlined text-[16px]">remove</span>
+                <span className="text-[12px]">A</span>
+                <span className="material-symbols-outlined text-[14px]">remove</span>
               </button>
-              <span className="px-1.5 font-label-meta text-[11px] text-ink-faint select-none font-bold">
-                {fontSize}px
+              <span
+                className={`min-w-[2.5rem] text-center font-label-meta text-xs font-bold select-none ${
+                  isNightMode ? 'text-[#FAF7F0]' : 'text-ink'
+                }`}
+                title="Text size in pixels"
+              >
+                {fontSize}
               </span>
               <button
-                onClick={() => setFontSize((prev) => Math.min(80, prev + 2))}
-                className="w-7 h-8 flex items-center justify-center rounded text-ink-soft hover:text-ink hover:bg-paper-raised transition-colors cursor-pointer"
-                title="Increase font size (+)"
+                onClick={() => setFontSize((prev) => clampFontSize(prev + FONT_STEP))}
+                disabled={fontSize >= FONT_MAX}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg font-semibold transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                  isNightMode ? 'text-[#FAF7F0] hover:bg-[#4A453F]' : 'text-ink hover:bg-paper-raised'
+                }`}
+                title="Bigger text (+)"
+                aria-label="Bigger text"
               >
-                <span className="material-symbols-outlined text-[16px]">add</span>
+                <span className="text-[16px]">A</span>
+                <span className="material-symbols-outlined text-[14px]">add</span>
               </button>
             </div>
 
-            <button
-              onClick={() => setTextStyle((s) => nextTextStyle(s))}
-              className={`h-9 px-2.5 rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer text-xs font-semibold ${
-                isNightMode ? 'hover:bg-[#3A3631] text-[#FAF7F0]' : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
-              }`}
-              title={`Text style: ${TEXT_STYLE_LABEL[textStyle]} (click to switch, or press T)`}
-              aria-label={`Text style: ${TEXT_STYLE_LABEL[textStyle]}`}
-            >
-              <span className={textStyle === 'serif' ? 'font-prompter-reading text-[15px]' : textStyle === 'bold' ? 'font-body-md font-bold text-[15px]' : 'font-body-md text-[15px]'}>Aa</span>
-              <span className="font-label-meta text-[10px] uppercase">{TEXT_STYLE_LABEL[textStyle]}</span>
-            </button>
+            <label className="relative flex items-center" title="Text style (T to switch)">
+              <span className="sr-only">Text style</span>
+              <select
+                value={textStyle}
+                onChange={(e) => {
+                  setTextStyle(e.target.value as 'serif' | 'sans' | 'bold');
+                  // Hand keyboard focus back so Space / R keep working.
+                  e.currentTarget.blur();
+                }}
+                className={`h-9 pl-3 pr-8 rounded-xl border text-sm font-semibold appearance-none cursor-pointer outline-none transition-colors ${
+                  isNightMode
+                    ? 'bg-[#3A3631] border-transparent text-[#FAF7F0]'
+                    : 'bg-paper-sunk border-paper-line/60 text-ink hover:bg-paper-raised'
+                } ${textStyle === 'serif' ? 'font-prompter-reading' : textStyle === 'bold' ? 'font-body-md font-bold' : 'font-body-md'}`}
+              >
+                {TEXT_STYLES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <span
+                className={`material-symbols-outlined text-[18px] absolute right-2 pointer-events-none ${
+                  isNightMode ? 'text-[#A39E92]' : 'text-ink-soft'
+                }`}
+              >
+                expand_more
+              </span>
+            </label>
 
             <button
               onClick={() => setIsNightMode(!isNightMode)}
