@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Script } from '../types';
-import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults } from '../lib/voiceMatch';
+import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, describeWords } from '../lib/voiceMatch';
+import { createVoiceActivityDetector } from '../lib/voiceActivity';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -76,6 +77,9 @@ interface ScriptWord {
   paragraphIndex: number;
   wordInPara: number;
   original: string;
+  display: string;
+  emphasis: boolean;
+  cue: boolean;
 }
 
 interface LivePrompterViewProps {
@@ -101,6 +105,26 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
     return 44;
   });
+
+  // Text style for the script: serif (Literata), sans (Inter), or bold sans.
+  const [textStyle, setTextStyle] = useState<'serif' | 'sans' | 'bold'>(() => {
+    try {
+      const saved = localStorage.getItem('ft_prompter_textstyle');
+      if (saved === 'serif' || saved === 'sans' || saved === 'bold') return saved;
+    } catch (e) {
+      console.warn(e);
+    }
+    return 'serif';
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('ft_prompter_textstyle', textStyle);
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [textStyle]);
+  const TEXT_STYLE_LABEL = { serif: 'Serif', sans: 'Sans', bold: 'Bold' } as const;
+  const nextTextStyle = (s: 'serif' | 'sans' | 'bold') => (s === 'serif' ? 'sans' : s === 'sans' ? 'bold' : 'serif');
 
   const [baseWpm, setBaseWpm] = useState<number>(() => {
     try {
@@ -167,6 +191,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
   // 2. Playback & Prompter state
   const [isPaused, setIsPaused] = useState<boolean>(true);
+  const [sessionStarted, setSessionStarted] = useState<boolean>(false); // Start pressed since the last Start over
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [activeLineIndex, setActiveLineIndex] = useState<number>(0);
@@ -219,12 +244,16 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const audioDataRef = useRef<Float32Array | null>(null);
 
-  // Audio calibration & envelope state refs
-  const noiseFloorRef = useRef<number>(0.008);
-  const calibrationStartTimeRef = useRef<number | null>(null);
-  const calibrationSamplesRef = useRef<number[]>([]);
-  const lastAboveThresholdTimeRef = useRef<number>(0);
-  const firstAboveThresholdTimeRef = useRef<number | null>(null);
+  // Voice activity (speaking / not speaking) from microphone loudness.
+  const voiceDetectorRef = useRef(createVoiceActivityDetector());
+  // Bumped by every audio cleanup, so a microphone start that finishes after a
+  // Pause (or a newer start) knows it is stale and releases what it opened.
+  const audioInitGenRef = useRef<number>(0);
+  const lastMeterUpdateRef = useRef<number>(0);
+  const isSpeakingRef = useRef<boolean>(false);
+  // Read by the animation loop each frame; a dependency would restart the
+  // microphone listener every time the measured reading pace changes.
+  const effectiveWpmRef = useRef<number>(0);
   const scrollVelocityMultiplierRef = useRef<number>(0); // 0 (silent) to 1 (full speed)
   const driftCorrectionFactorRef = useRef<number>(1.0); // 0.5 to 1.6
   const targetWordIndexRef = useRef<number>(0);
@@ -283,6 +312,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   // Speed multiplier & effective WPM
   const speedMultiplier = speedLevel === '1' ? 0.75 : speedLevel === '2' ? 1.0 : 1.35;
   const effectiveWpm = scrollMode === 'voice' ? dynamicWpm : Math.round(baseWpm * speedMultiplier);
+  effectiveWpmRef.current = effectiveWpm;
 
   // Tokenize paragraphs & words from script
   const paragraphs = useMemo(() => {
@@ -312,12 +342,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     paragraphs.forEach((para, paraIdx) => {
       const wordsInPara = para.split(/\s+/).filter(Boolean);
+      const styles = describeWords(wordsInPara);
       wordsInPara.forEach((word, wordIdx) => {
         list.push({
           globalIndex: globalIdx++,
           paragraphIndex: paraIdx,
           wordInPara: wordIdx,
           original: word,
+          ...styles[wordIdx],
         });
       });
     });
@@ -422,6 +454,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
   // Clean up Web Audio API resources
   const cleanupWebAudio = useCallback(() => {
+    audioInitGenRef.current += 1; // any microphone start still in flight is now stale
     if (sourceNodeRef.current) {
       try { sourceNodeRef.current.disconnect(); } catch (e) {}
       sourceNodeRef.current = null;
@@ -440,11 +473,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   // Initialize Web Audio API pipeline for mic stream
   const initWebAudio = useCallback(async () => {
     cleanupWebAudio();
+    const gen = audioInitGenRef.current;
 
     let stream = webcamStreamRef.current;
     if (!stream || stream.getAudioTracks().length === 0 || stream.getAudioTracks().every(t => t.readyState === 'ended')) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (gen !== audioInitGenRef.current) {
+          // Paused (or restarted) while the browser was opening the mic.
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         webcamStreamRef.current = stream;
         setMicBlocked(false);
       } catch (err) {
@@ -476,9 +515,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       sourceNodeRef.current = source;
       audioDataRef.current = new Float32Array(analyser.fftSize);
 
-      // Start calibration for first 1000ms
-      calibrationStartTimeRef.current = performance.now();
-      calibrationSamplesRef.current = [];
+      // Learn this room's quiet level again for the new listening session.
+      voiceDetectorRef.current.reset();
     } catch (e) {
       console.warn('Web Audio initialization error:', e);
     }
@@ -529,51 +567,29 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             sumSquares += audioBuffer[i] * audioBuffer[i];
           }
           rawRms = Math.sqrt(sumSquares / audioBuffer.length);
-
-          // Calibrate noise floor for the first 1000 ms
-          if (calibrationStartTimeRef.current !== null) {
-            const calElapsed = time - calibrationStartTimeRef.current;
-            calibrationSamplesRef.current.push(rawRms);
-            if (calElapsed >= 1000) {
-              const sum = calibrationSamplesRef.current.reduce((a, b) => a + b, 0);
-              const avg = sum / calibrationSamplesRef.current.length;
-              noiseFloorRef.current = Math.max(0.003, avg);
-              calibrationStartTimeRef.current = null;
-            }
-          }
         }
 
-        // Voice activity detection with 150ms attack and 600ms release
-        const speakingThreshold = noiseFloorRef.current * 2.5;
-        let isNowSpeaking = false;
-
-        if (rawRms > speakingThreshold) {
-          if (firstAboveThresholdTimeRef.current === null) {
-            firstAboveThresholdTimeRef.current = time;
-          }
-          if (time - firstAboveThresholdTimeRef.current >= 150) {
-            isNowSpeaking = true;
-          }
-          lastAboveThresholdTimeRef.current = time;
-        } else {
-          firstAboveThresholdTimeRef.current = null;
-          // Hold speech state for 600ms release
-          if (time - lastAboveThresholdTimeRef.current <= 600) {
-            isNowSpeaking = true;
-          }
+        // Speaking / not speaking (room level, 150 ms attack, 600 ms release):
+        // see src/lib/voiceActivity.ts.
+        const isNowSpeaking = analyser && audioBuffer ? voiceDetectorRef.current.update(rawRms, time).speaking : false;
+        if (isNowSpeaking !== isSpeakingRef.current) {
+          isSpeakingRef.current = isNowSpeaking;
+          setIsSpeaking(isNowSpeaking);
         }
 
-        setIsSpeaking(isNowSpeaking);
-
-        // Drive real mic visualizer bars in HUD
-        const scaledRms = Math.min(1, rawRms * 8);
-        setMicVisualLevels([
-          Math.min(1, scaledRms * 1.5 + 0.05),
-          Math.min(1, scaledRms * 2.2 + 0.05),
-          Math.min(1, scaledRms * 3.0 + 0.05),
-          Math.min(1, scaledRms * 2.0 + 0.05),
-          Math.min(1, scaledRms * 1.2 + 0.05),
-        ]);
+        // Mic meter: about 10 updates a second is enough to read, and avoids
+        // re-rendering the whole studio every animation frame.
+        if (time - lastMeterUpdateRef.current >= 100) {
+          lastMeterUpdateRef.current = time;
+          const scaledRms = Math.min(1, rawRms * 8);
+          setMicVisualLevels([
+            Math.min(1, scaledRms * 1.5 + 0.05),
+            Math.min(1, scaledRms * 2.2 + 0.05),
+            Math.min(1, scaledRms * 3.0 + 0.05),
+            Math.min(1, scaledRms * 2.0 + 0.05),
+            Math.min(1, scaledRms * 1.2 + 0.05),
+          ]);
+        }
 
         // Easing: while speaking ramp to 1.0; when silent ease to 0 within 300ms
         if (isNowSpeaking) {
@@ -619,7 +635,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           const pixelsPerWord = renderedHeight / totalWords;
           const pixelsPerSecond =
             pixelsPerWord *
-            (effectiveWpm / 60) *
+            (effectiveWpmRef.current / 60) *
             scrollVelocityMultiplierRef.current *
             driftCorrectionFactorRef.current;
 
@@ -631,7 +647,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         if (container && content) {
           const renderedHeight = content.scrollHeight || 1000;
           const pixelsPerWord = renderedHeight / totalWords;
-          const pixelsPerSecond = pixelsPerWord * (effectiveWpm / 60);
+          const pixelsPerSecond = pixelsPerWord * (effectiveWpmRef.current / 60);
 
           container.scrollTop += pixelsPerSecond * deltaSec;
           updateActiveLineFromScroll();
@@ -658,7 +674,6 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   }, [
     isPaused,
     scrollMode,
-    effectiveWpm,
     totalWords,
     updateActiveLineFromScroll,
     initWebAudio,
@@ -690,6 +705,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
     const el = document.getElementById(`prompter-para-${paraIdx}`);
     scrollElementToGuide(el, 'smooth');
+    // Forget words heard before the jump so a late result can't pull the
+    // script back to where the speaker was.
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
   };
 
   const handleRestartFromTop = () => {
@@ -705,6 +729,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     paceHistoryRef.current = [];
     setElapsedSeconds(0);
     setLastRecognizedPhrase('');
+    setSessionStarted(false);
     // The recognizer keeps everything heard in this listening session; restart
     // it so words said before "Start over" can't pull the script back down.
     if (recognitionRef.current) {
@@ -716,12 +741,21 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
   };
 
-  // Start/Pause; starting again at the end of the script begins from the top.
+  // Pause stops at once. Start counts down 3-2-1 and begins at the first line;
+  // after a Pause mid-script the same button reads "Resume" and counts down
+  // back into the line where the speaker stopped.
+  const canResume = sessionStarted && currentWordIndex > 0 && currentWordIndex < tokenizedWords.length - 1;
   const handleStartPause = () => {
-    if (isPaused && currentWordIndexRef.current >= tokenizedWords.length - 1) {
-      handleRestartFromTop();
+    if (!isPaused) {
+      setIsPaused(true);
+      return;
     }
-    setIsPaused(!isPaused);
+    const resume = canResume;
+    runCountdown(() => {
+      if (!resume) handleRestartFromTop();
+      setSessionStarted(true);
+      setIsPaused(false);
+    });
   };
 
   // -------------------------------------------------------------
@@ -748,6 +782,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
+      wordTrackingRef.current = false;
       setVoiceNotice('This browser can’t recognize words, so the script follows the sound of your voice instead. Chrome or Edge track words best.');
       return;
     }
@@ -861,8 +896,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       recognition.start();
       setIsListening(true);
       recognitionRef.current = recognition;
+      // Words decide the position from the moment recognition runs. Loudness
+      // scrolling is only the fallback when recognition is unavailable or
+      // fails; letting it run until the first word arrives would push the
+      // (forward-only) position ahead of the speaker after every Resume.
+      wordTrackingRef.current = true;
     } catch (err: any) {
       console.warn('Speech recognition init error:', err);
+      wordTrackingRef.current = false;
       setVoiceNotice('Word tracking couldn’t start, so the script follows the sound of your voice instead.');
     }
 
@@ -880,7 +921,6 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         }
       }
       recognitionRef.current = null;
-      wordTrackingRef.current = false;
       setIsListening(false);
     };
   }, [scrollMode, isPaused, speechLang, tokenizedWords, speechTokens]);
@@ -1062,26 +1102,34 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     setCountdown(null);
   };
 
+  // 3-2-1 overlay, then `onDone`. Ignored while a countdown is already running.
+  const runCountdown = (onDone: () => void) => {
+    if (countdownIntervalRef.current) return;
+    setCountdown(3);
+    let remaining = 3;
+    countdownIntervalRef.current = setInterval(() => {
+      remaining -= 1;
+      if (remaining > 0) {
+        setCountdown(remaining);
+        return;
+      }
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+      setCountdown(null);
+      onDone();
+    }, 1000);
+  };
+
   const handleToggleRecord = () => {
     if (isRecording) {
       stopRecordingStream();
     } else {
-      if (countdownIntervalRef.current) return; // countdown already running
-      setCountdown(3);
-      let remaining = 3;
-      countdownIntervalRef.current = setInterval(() => {
-        remaining -= 1;
-        if (remaining > 0) {
-          setCountdown(remaining);
-          return;
-        }
-        clearInterval(countdownIntervalRef.current);
-        countdownIntervalRef.current = null;
-        setCountdown(null);
+      runCountdown(() => {
         // Every take starts from the first line of the script.
         handleRestartFromTop();
+        setSessionStarted(true);
         startRecordingStream();
-      }, 1000);
+      });
     }
   };
 
@@ -1180,6 +1228,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         handleToggleRecord();
+      } else if (e.code === 'KeyT') {
+        e.preventDefault();
+        setTextStyle((s) => nextTextStyle(s));
       } else if (e.code === 'KeyM') {
         e.preventDefault();
         setIsMirrored((prev) => !prev);
@@ -1624,7 +1675,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             fontSize: `${fontSize}px`,
             transform: isMirrored ? 'scaleX(-1)' : 'none',
           }}
-          className="w-full max-w-[28ch] flex flex-col gap-10 text-left font-prompter-reading tracking-tight leading-[1.45] transition-transform duration-200"
+          className={`w-full max-w-[28ch] flex flex-col gap-10 text-left tracking-tight leading-[1.45] transition-transform duration-200 ${
+            textStyle === 'serif' ? 'font-prompter-reading' : 'font-body-md'
+          } ${textStyle === 'bold' ? '[&_*]:font-bold!' : ''}`}
         >
           {paragraphs.map((para, paraIdx) => {
             const isPast = paraIdx < activeLineIndex;
@@ -1673,14 +1726,20 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                         key={wordObj.globalIndex}
                         id={`ft-word-${wordObj.globalIndex}`}
                         className={`inline-block mr-[0.28em] transition-colors duration-150 ${
-                          isWordActive
+                          wordObj.cue
+                            ? 'text-[0.5em] align-middle font-label-meta uppercase tracking-wider text-forest opacity-80'
+                            : wordObj.emphasis
+                            ? 'font-bold'
+                            : ''
+                        } ${
+                          isWordActive && !wordObj.cue
                             ? 'underline decoration-forest decoration-2 font-bold'
                             : isWordSpoken && scrollMode === 'voice'
                             ? 'opacity-60'
                             : ''
                         }`}
                       >
-                        {wordObj.original}
+                        {wordObj.display}
                       </span>
                     );
                   })}
@@ -1775,7 +1834,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <span className="material-symbols-outlined text-[20px]">
                 {isPaused ? 'play_arrow' : 'pause'}
               </span>
-              <span>{isPaused ? 'Start' : 'Pause'}</span>
+              <span>{isPaused ? (canResume ? 'Resume' : 'Start') : 'Pause'}</span>
             </button>
 
             <button
@@ -1864,6 +1923,18 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <span className="material-symbols-outlined text-[16px]">add</span>
               </button>
             </div>
+
+            <button
+              onClick={() => setTextStyle((s) => nextTextStyle(s))}
+              className={`h-9 px-2.5 rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer text-xs font-semibold ${
+                isNightMode ? 'hover:bg-[#3A3631] text-[#FAF7F0]' : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
+              }`}
+              title={`Text style: ${TEXT_STYLE_LABEL[textStyle]} (click to switch, or press T)`}
+              aria-label={`Text style: ${TEXT_STYLE_LABEL[textStyle]}`}
+            >
+              <span className={textStyle === 'serif' ? 'font-prompter-reading text-[15px]' : textStyle === 'bold' ? 'font-body-md font-bold text-[15px]' : 'font-body-md text-[15px]'}>Aa</span>
+              <span className="font-label-meta text-[10px] uppercase">{TEXT_STYLE_LABEL[textStyle]}</span>
+            </button>
 
             <button
               onClick={() => setIsNightMode(!isNightMode)}
@@ -2111,6 +2182,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
                 <span className="text-ink-soft">Font size larger / smaller</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">+ / -</kbd>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
+                <span className="text-ink-soft">Text style: serif, sans, bold</span>
+                <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">T</kbd>
               </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-ink-soft">Leave the prompter</span>

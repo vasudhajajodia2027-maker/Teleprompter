@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceSpeechPosition, buildSpeechTokens, tailTokensFromResults } from './voiceMatch';
+import { advanceSpeechPosition, buildSpeechTokens, describeWords, tailTokensFromResults } from './voiceMatch';
 import { DEFAULT_SCRIPTS } from '../data/defaultScripts';
 
 // The shipped sample script: what a first-time user reads in the prompter.
@@ -104,5 +104,29 @@ describe('voice follow: edges', () => {
 
   it('ignores empty results', () => {
     expect(say(5, '   ')).toBe(5);
+  });
+});
+
+describe('how script words are shown', () => {
+  const show = (text: string) =>
+    describeWords(text.split(' ')).map((w) => (w.emphasis ? `B:${w.display}` : w.cue ? `N:${w.display}` : w.display));
+
+  it('shows *stressed* words in bold without the asterisks', () => {
+    expect(show('say *this* now')).toEqual(['say', 'B:this', 'now']);
+    expect(show('*really important*, ok')).toEqual(['B:really', 'B:important,', 'ok']);
+  });
+
+  it('marks [bracketed notes] so they show as small labels', () => {
+    expect(show('[CAMERA LOOK] hello')).toEqual(['N:[CAMERA', 'N:LOOK]', 'hello']);
+  });
+
+  it('stresses to the end of the line when the closing asterisk is missing', () => {
+    expect(show('plain *open never')).toEqual(['plain', 'B:open', 'B:never']);
+  });
+
+  it('still matches stressed words when they are spoken', () => {
+    const w = 'say *this* now please'.split(' ');
+    const t = buildSpeechTokens(w);
+    expect(w[t[advanceSpeechPosition(t, 0, tailTokensFromResults(['say this']))].wordIndex]).toBe('now');
   });
 });

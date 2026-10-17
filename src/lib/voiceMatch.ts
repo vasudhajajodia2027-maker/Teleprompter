@@ -124,6 +124,28 @@ export function cueWordFlags(words: string[]): boolean[] {
   return flags;
 }
 
+export interface WordStyle {
+  display: string; // text shown in the prompter (stress asterisks removed)
+  emphasis: boolean; // inside *stress* marks from the editor's Stress button
+  cue: boolean; // inside a [bracketed note], shown but never read aloud
+}
+
+// How each script word is shown. "*really important*," shows as
+// "really important," in bold; asterisks never reach the screen.
+export function describeWords(words: string[]): WordStyle[] {
+  const isCue = cueWordFlags(words);
+  let inEmphasis = false;
+  return words.map((word, i) => {
+    if (isCue[i]) return { display: word, emphasis: false, cue: true };
+    const opens = /^[^\p{L}\p{N}*]*\*/u.test(word);
+    const closes = /\*[^\p{L}\p{N}*]*$/u.test(word.replace(/^[^\p{L}\p{N}*]*\*/u, ''));
+    if (opens) inEmphasis = true;
+    const emphasis = inEmphasis;
+    if (closes || (opens && /\*.*\*/.test(word))) inEmphasis = false;
+    return { display: word.replace(/\*/g, ''), emphasis, cue: false };
+  });
+}
+
 export function buildSpeechTokens(words: string[]): SpeechToken[] {
   const isCue = cueWordFlags(words);
   const tokens: SpeechToken[] = [];
