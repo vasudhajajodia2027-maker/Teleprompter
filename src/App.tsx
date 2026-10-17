@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Script, LicenseStatus } from './types';
 import { DEFAULT_SCRIPTS } from './data/defaultScripts';
 import { nowStamp } from './lib/scriptTime';
+import { formatStoredReadTime, readSeconds, spokenWordCount } from './lib/scriptText';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
@@ -255,8 +256,11 @@ export default function App() {
     handleNavigate('editor');
   };
 
+  // Exit from the prompter goes back to where it was opened from.
+  const [prompterReturnView, setPrompterReturnView] = useState<AppView>('scripts');
   const handleOpenPrompter = (scriptId?: string) => {
     if (scriptId) setSelectedScriptId(scriptId);
+    setPrompterReturnView(currentView === 'editor' ? 'editor' : 'scripts');
     handleNavigate('prompter');
   };
 
@@ -366,20 +370,17 @@ export default function App() {
   };
 
   const handleImportScript = (title: string, content: string) => {
-    const words = content.trim().split(/\s+/).filter(Boolean).length;
-    const seconds = Math.round((words / 150) * 60);
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const words = spokenWordCount(content);
 
     const imported: Script = {
       id: `ft-${Math.floor(10000 + Math.random() * 90000)}`,
-      title,
-      episodeTag: 'Imported .txt',
+      title: title.trim() || 'Untitled',
+      episodeTag: 'Imported file',
       category: 'draft',
       pacingWpm: 150,
       updatedAt: nowStamp(),
       wordCount: words,
-      estimatedReadTime: `${m}m ${s.toString().padStart(2, '0')}s`,
+      estimatedReadTime: formatStoredReadTime(readSeconds(content, 150)),
       content,
     };
     setScripts((prev) => [imported, ...prev]);
@@ -469,7 +470,7 @@ export default function App() {
     return (
       <LivePrompterView
         script={activeScript}
-        onExit={() => handleNavigate('scripts')}
+        onExit={() => handleNavigate(prompterReturnView)}
         isPro={license.isActive}
       />
     );

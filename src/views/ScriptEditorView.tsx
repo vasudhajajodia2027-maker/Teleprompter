@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { nowStamp } from '../lib/scriptTime';
+import { formatStoredReadTime, readSeconds, spokenWordCount, stripMarkdown } from '../lib/scriptText';
 import { Script } from '../types';
 
 interface ScriptEditorViewProps {
@@ -28,12 +29,10 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate metrics
-  const words = content.trim() ? content.trim().split(/\s+/).filter(Boolean).length : 0;
-  const totalSeconds = Math.round((words / pacingWpm) * 60);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const formattedReadTime = `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+  // Spoken words only ([notes] and symbols like # or — aren't read aloud),
+  // and the read time includes written pauses such as [PAUSE 2s].
+  const words = spokenWordCount(content);
+  const formattedReadTime = formatStoredReadTime(readSeconds(content, pacingWpm));
 
   // Sync state changes with parent
   useEffect(() => {
@@ -44,15 +43,12 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
 
   const triggerUpdate = (newTitle: string, newContent: string, newWpm: number) => {
     setSaveStatus('Saving…');
-    const updatedWords = newContent.trim() ? newContent.trim().split(/\s+/).filter(Boolean).length : 0;
-    const s = Math.round((updatedWords / newWpm) * 60);
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    const estTime = `${m}m ${sec.toString().padStart(2, '0')}s`;
+    const updatedWords = spokenWordCount(newContent);
+    const estTime = formatStoredReadTime(readSeconds(newContent, newWpm));
 
     onUpdateScript({
       ...script,
-      title: newTitle,
+      title: newTitle.trim() || 'Untitled',
       content: newContent,
       pacingWpm: newWpm,
       wordCount: updatedWords,
@@ -82,50 +78,101 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     triggerUpdate(title, content, val);
   };
 
-  const insertSyntax = (syntax: string) => {
-    if (!editorRef.current) return;
-    const start = editorRef.current.selectionStart;
-    const end = editorRef.current.selectionEnd;
-    const currentVal = content;
-
-    const before = currentVal.substring(0, start);
-    const selected = currentVal.substring(start, end);
-    const after = currentVal.substring(end);
-
-    let inserted = '';
-    if (syntax === '*emphasis*') {
-      inserted = selected ? `*${selected}*` : `*emphasis*`;
-    } else {
-      inserted = `\n\n${syntax}\n\n`;
+  // Replace characters [from, to) of the script, then select [selectFrom,
+  // selectTo) of the new text. Goes through the browser's own editing command
+  // so Ctrl+Z can undo it; React receives it as ordinary typing.
+  const replaceRange = (from: number, to: number, text: string, selectFrom = text.length, selectTo = selectFrom) => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(from, to);
+    let done = false;
+    try {
+      done = document.execCommand('insertText', false, text);
+    } catch {
+      done = false;
     }
+    if (!done) {
+      // Browsers without execCommand: the same edit, without undo.
+      el.setRangeText(text, from, to, 'end');
+      setContent(el.value);
+      triggerUpdate(title, el.value, pacingWpm);
+    }
+    el.setSelectionRange(from + selectFrom, from + selectTo);
+  };
 
-    const updated = before + inserted + after;
-    setContent(updated);
-    triggerUpdate(title, updated, pacingWpm);
+  // A [note] on its own line with one blank line before and after it, and no
+  // stray spaces left at the end of the line before or the start of the next.
+  const insertNote = (note: string) => {
+    const el = editorRef.current;
+    if (!el) return;
+    const value = el.value;
+    let from = el.selectionStart;
+    let to = el.selectionEnd;
+    while (from > 0 && /[ \t]/.test(value[from - 1])) from--;
+    while (to < value.length && /[ \t]/.test(value[to])) to++;
+    const before = value.slice(0, from);
+    const after = value.slice(to);
+    const lead = !before || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+    const trail = after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
+    const text = lead + note + trail;
+    // Cursor at the start of the line after the note.
+    const blankAfter = after.startsWith('\n\n') ? 2 : after.startsWith('\n') ? 1 : 0;
+    replaceRange(from, to, text, text.length + blankAfter);
+  };
 
-    setTimeout(() => {
-      if (editorRef.current) {
-        editorRef.current.focus();
-        editorRef.current.selectionStart = editorRef.current.selectionEnd = start + inserted.length;
-      }
-    }, 50);
+  // Stress the selected words. With nothing selected, stress the word at the
+  // cursor; between words, insert a placeholder and select it to type over.
+  const insertStress = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    const value = el.value;
+    let from = el.selectionStart;
+    let to = el.selectionEnd;
+    const isWordChar = (c: string | undefined) => !!c && /[\p{L}\p{N}'’-]/u.test(c);
+    if (from === to) {
+      while (from > 0 && isWordChar(value[from - 1])) from--;
+      while (to < value.length && isWordChar(value[to])) to++;
+    }
+    if (from === to) {
+      const lead = from > 0 && !/\s/.test(value[from - 1]) ? ' ' : '';
+      const trail = to < value.length && !/[\s.,!?;:]/.test(value[to]) ? ' ' : '';
+      const text = `${lead}*word*${trail}`;
+      replaceRange(from, to, text, lead.length + 1, lead.length + 5);
+      return;
+    }
+    // Keep spaces at the edges of the selection outside the stars.
+    while (from < to && /\s/.test(value[from])) from++;
+    while (to > from && /\s/.test(value[to - 1])) to--;
+    replaceRange(from, to, `*${value.slice(from, to)}*`);
   };
 
   const handleClear = () => {
-    if (confirm('Clear the whole script? This can’t be undone.')) {
-      setContent('');
-      triggerUpdate(title, '', pacingWpm);
+    const el = editorRef.current;
+    if (!el?.value) return;
+    if (confirm('Clear the whole script? You can bring it back with Undo (Ctrl+Z).')) {
+      replaceRange(0, el.value.length, '');
     }
   };
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Lets the same file be chosen again later.
+    e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const text = (evt.target?.result as string) || '';
-      setContent(text);
-      triggerUpdate(title, text, pacingWpm);
+      const raw = (evt.target?.result as string) || '';
+      const text = /\.(md|markdown)$/i.test(file.name) ? stripMarkdown(raw) : raw;
+      const el = editorRef.current;
+      if (!el) return;
+      if (
+        el.value.trim() &&
+        !confirm(`Replace this script with “${file.name}”? You can bring the current text back with Undo (Ctrl+Z).`)
+      ) {
+        return;
+      }
+      replaceRange(0, el.value.length, text, 0);
     };
     reader.readAsText(file);
   };
@@ -171,6 +218,10 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 className="font-headline-md text-2xl sm:text-3xl text-ink bg-transparent focus:outline-none focus:bg-paper-sunk/60 rounded px-1 -ml-1 transition-colors w-full max-w-2xl font-medium tracking-tight font-display"
                 value={title}
                 onChange={handleTitleChange}
+                onBlur={() => {
+                  if (!title.trim()) setTitle('Untitled');
+                }}
+                placeholder="Untitled"
               />
             </div>
 
@@ -209,7 +260,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             <div className="bg-paper-raised rounded-lg p-2 flex flex-wrap items-center justify-between gap-3 border border-paper-line shadow-xs">
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => insertSyntax('[PAUSE 2s]')}
+                  onClick={() => insertNote('[PAUSE 2s]')}
                   className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                   title="Insert a [PAUSE 2s] note"
                   type="button"
@@ -218,7 +269,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   <span>+ 2s Pause</span>
                 </button>
                 <button
-                  onClick={() => insertSyntax('[CAMERA LOOK]')}
+                  onClick={() => insertNote('[CAMERA LOOK]')}
                   className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                   title="Insert a [CAMERA LOOK] note"
                   type="button"
@@ -227,9 +278,9 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   <span>+ Lens Cue</span>
                 </button>
                 <button
-                  onClick={() => insertSyntax('*emphasis*')}
+                  onClick={insertStress}
                   className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Insert *emphasis* to mark a word to stress (shown with the asterisks)"
+                  title="Stress the selected words, or the word at the cursor. Shown in bold in the prompter."
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[15px] text-ink-soft">format_italic</span>
@@ -251,7 +302,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[15px] text-ink-soft">upload_file</span>
-                  <span>Import .txt</span>
+                  <span>Import .txt / .md</span>
                 </button>
                 <button
                   onClick={handleClear}

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Script, LicenseStatus } from '../types';
 import { ASSETS } from '../data/defaultScripts';
 import { editedTime, formatEdited, formatReadTime } from '../lib/scriptTime';
+import { readSeconds, spokenWordCount, stripMarkdown } from '../lib/scriptText';
 
 interface MyScriptsViewProps {
   scripts: Script[];
@@ -36,9 +37,8 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Count from the text itself so the library always matches the editor.
-  const countWords = (content: string) => (content.trim() ? content.trim().split(/\s+/).length : 0);
-  const readTime = (content: string, wpm: number) =>
-    formatReadTime(Math.round((countWords(content) / (wpm || 150)) * 60));
+  const countWords = spokenWordCount;
+  const readTime = (content: string, wpm: number) => formatReadTime(readSeconds(content, wpm || 150));
 
   // The featured card is the script edited most recently (templates excluded).
   // Scripts with no known edit time keep their library order.
@@ -72,7 +72,8 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target?.result as string;
+      const raw = (e.target?.result as string) || '';
+      const content = /\.(md|markdown)$/i.test(file.name) ? stripMarkdown(raw) : raw;
       const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       onImportScript(title, content);
     };

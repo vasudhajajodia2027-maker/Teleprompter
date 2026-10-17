@@ -172,7 +172,7 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
                   ? 'font-bold'
                   : ''
               } ${
-                isWordActive && !wordObj.cue
+                isWordActive && !wordObj.cue && /[\p{L}\p{N}]/u.test(wordObj.display)
                   ? 'underline decoration-forest decoration-2 font-bold'
                   : isWordSpoken && dimSpoken
                   ? 'opacity-60'
@@ -334,6 +334,43 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   // Refs
   const prompterContainerRef = useRef<HTMLDivElement>(null);
   const scriptContentRef = useRef<HTMLDivElement>(null);
+
+  // The script area ends above the bottom toolbar, so no line is hidden under
+  // it. Measured, since the toolbar wraps onto two rows on narrow windows.
+  const dockRef = useRef<HTMLDivElement>(null);
+  const [scrollAreaHeight, setScrollAreaHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const dock = dockRef.current;
+    if (!dock || typeof ResizeObserver === 'undefined') return;
+    // Window height minus the top bar above the script area, the toolbar, its
+    // 24px offset from the bottom (bottom-6) and an 8px gap. offsetHeight
+    // ignores the toolbar's entrance animation transform.
+    const measure = () => {
+      const top = prompterContainerRef.current?.offsetTop ?? 0;
+      setScrollAreaHeight(Math.max(200, window.innerHeight - top - dock.offsetHeight - 24 - 8));
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(dock);
+    observer.observe(document.documentElement);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
+  // Where the reading guide line is, measured from the top of the visible
+  // script area (which starts below the top bar).
+  const guideRef = useRef<HTMLDivElement>(null);
+  const readingGuideY = () => {
+    const guide = guideRef.current?.getBoundingClientRect().top ?? window.innerHeight * 0.33;
+    return guide - (prompterContainerRef.current?.getBoundingClientRect().top ?? 0);
+  };
+
+  // The camera preview can be tucked away; while shown, the script keeps
+  // clear of it on the right.
+  const [showCameraPreview, setShowCameraPreview] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const webcamStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -517,7 +554,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     // While words are being tracked, the spoken position decides the line.
     if (scrollModeRef.current === 'voice' && wordTrackingRef.current) return;
 
-    const guideViewportY = container.clientHeight * 0.33;
+    const guideViewportY = readingGuideY();
     const guideAbsoluteY = container.scrollTop + guideViewportY;
 
     let foundIdx = 0;
@@ -732,7 +769,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           // the reading guide, leaving the following lines visible below it.
           const wordEl = document.getElementById(`ft-word-${scrollAnchorWordRef.current}`);
           if (wordEl) {
-            const guideY = container.clientHeight * 0.33;
+            const guideY = readingGuideY();
             const offset =
               wordEl.getBoundingClientRect().top - container.getBoundingClientRect().top - guideY;
             if (Math.abs(offset) > 1) {
@@ -806,7 +843,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const container = prompterContainerRef.current;
     const wordEl = document.getElementById(`ft-word-${currentWordIndexRef.current}`);
     if (!container || !wordEl) return;
-    const guideY = container.clientHeight * 0.33;
+    const guideY = readingGuideY();
     container.scrollTop += wordEl.getBoundingClientRect().top - container.getBoundingClientRect().top - guideY;
   }, [fontSize, textStyle]);
 
@@ -814,7 +851,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const container = prompterContainerRef.current;
     if (!container || !element) return;
 
-    const guideViewportY = container.clientHeight * 0.33;
+    const guideViewportY = readingGuideY();
     const targetScrollTop = Math.max(0, element.offsetTop - guideViewportY);
 
     container.scrollTo({
@@ -855,10 +892,12 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     if (container) {
       container.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    setActiveLineIndex(0);
-    setCurrentWordIndex(0);
-    currentWordIndexRef.current = 0;
-    targetWordIndexRef.current = 0;
+    // Start on the first word that is read aloud, not a note or a symbol.
+    const firstWord = speechTokens[0]?.wordIndex ?? 0;
+    setActiveLineIndex(tokenizedWords[firstWord]?.paragraphIndex ?? 0);
+    setCurrentWordIndex(firstWord);
+    currentWordIndexRef.current = firstWord;
+    targetWordIndexRef.current = firstWord;
     speechPosRef.current = 0;
     paceHistoryRef.current = [];
     setElapsedSeconds(0);
@@ -1252,7 +1291,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     const audioOnly = !hasLiveVideo(stream);
     if (audioOnly) {
-      setCameraError('No camera available, so this take records sound only.');
+      setCameraError('No camera available, so this take records audio only.');
     }
 
     if (stream && !audioOnly) {
@@ -1815,8 +1854,31 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       {/* LIVE CAMERA HUD PiP (Floating Top-Right)                      */}
       {/* ============================================================== */}
-      <div className="fixed top-20 right-6 sm:right-12 z-40 w-[200px] sm:w-[240px] aspect-video rounded-xl overflow-hidden bg-night-paper shadow-2xl border-2 border-forest group transition-all duration-200 hover:scale-[1.02]">
+      {!showCameraPreview && (
+        <button
+          onClick={() => setShowCameraPreview(true)}
+          className="fixed top-20 right-6 sm:right-12 z-40 px-3 py-1.5 rounded-full bg-night-paper text-white font-label-meta text-[11px] flex items-center gap-1.5 shadow-lg border border-forest cursor-pointer"
+          title="Show the camera preview"
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : 'bg-forest'}`}></span>
+          <span className="material-symbols-outlined text-[14px]">videocam</span>
+          <span>Show camera</span>
+        </button>
+      )}
+      <div
+        className={`fixed top-20 right-6 sm:right-12 z-40 w-[160px] sm:w-[200px] lg:w-[240px] aspect-video rounded-xl overflow-hidden bg-night-paper shadow-2xl border-2 border-forest group transition-all duration-200 ${
+          showCameraPreview ? '' : 'hidden'
+        }`}
+      >
         <div className="relative w-full h-full">
+          <button
+            onClick={() => setShowCameraPreview(false)}
+            className="absolute top-8 right-2 w-6 h-6 rounded bg-night-paper/80 text-white hover:bg-night-paper flex items-center justify-center cursor-pointer border border-white/20 z-20"
+            title="Hide the camera preview (recording carries on)"
+            aria-label="Hide the camera preview"
+          >
+            <span className="material-symbols-outlined text-[14px]">close_fullscreen</span>
+          </button>
           <video
             ref={videoRef}
             autoPlay
@@ -1920,6 +1982,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* READING GUIDE LINE (FIXED AT 33% FROM TOP)                     */}
       {/* ============================================================== */}
       <div
+        ref={guideRef}
         style={{ top: '33vh' }}
         className="fixed left-0 right-0 z-20 pointer-events-none flex items-center justify-between px-4 sm:px-12"
       >
@@ -1933,7 +1996,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       <div
         ref={prompterContainerRef}
         onScroll={updateActiveLineFromScroll}
-        className="h-screen overflow-y-auto w-full relative pt-[33vh] pb-[60vh] px-6 flex justify-center focus:outline-none"
+        style={{ height: scrollAreaHeight ? `${scrollAreaHeight}px` : '100vh' }}
+        className={`overflow-y-auto overflow-x-hidden w-full relative px-6 flex justify-center focus:outline-none ${
+          showCameraPreview ? 'sm:pr-[248px] lg:pr-[312px]' : ''
+        }`}
       >
         <div
           ref={scriptContentRef}
@@ -1941,7 +2007,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             fontSize: `${fontSize}px`,
             transform: isMirrored ? 'scaleX(-1)' : 'none',
           }}
-          className={`w-full max-w-[28ch] flex flex-col gap-10 text-left tracking-tight leading-[1.45] transition-transform duration-200 ${
+          className={`w-full min-w-0 max-w-[28ch] h-max pt-[33vh] pb-[60vh] flex flex-col gap-10 text-left tracking-tight leading-[1.45] [overflow-wrap:anywhere] hyphens-auto transition-transform duration-200 ${
             textStyle === 'serif' ? 'font-prompter-reading' : 'font-body-md'
           } ${textStyle === 'bold' ? '[&_*]:font-bold!' : ''}`}
         >
@@ -1988,7 +2054,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       {/* FLOATING HUD CONTROL DOCK (BOTTOM CENTER)                      */}
       {/* ============================================================== */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5 w-full max-w-3xl px-4">
+      <div ref={dockRef} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5 w-full max-w-3xl px-4">
         <div
           className={`flex flex-wrap items-center justify-between gap-3 w-full px-5 py-3 rounded-2xl shadow-[0_8px_32px_rgba(31,29,26,0.18)] border transition-colors ${
             isNightMode
@@ -2231,7 +2297,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                         <span className="font-bold text-ink">Take {take.takeNumber}</span>
                         {take.audioOnly && (
                           <span className="px-2 py-0.5 rounded bg-paper-raised border border-paper-line text-ink-soft font-label-meta text-[10px] font-bold">
-                            Sound only
+                            Audio only
                           </span>
                         )}
                         {take.isDownloaded ? (
@@ -2253,7 +2319,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                       <button
                         onClick={() => setPreviewTake(take)}
                         className="p-2 rounded-lg bg-paper-raised hover:bg-white text-ink font-body-sm text-xs border border-paper-line cursor-pointer flex items-center gap-1 shadow-2xs"
-                        title={take.audioOnly ? 'Play this take (sound only)' : 'Play this take'}
+                        title={take.audioOnly ? 'Play this take (audio only)' : 'Play this take'}
                       >
                         <span className="material-symbols-outlined text-[16px]">play_arrow</span>
                         <span>Play</span>
@@ -2262,7 +2328,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                       <button
                         onClick={() => handleDownloadTake(take)}
                         className="p-2 rounded-lg bg-forest text-on-forest hover:bg-forest-dark font-body-sm text-xs cursor-pointer flex items-center gap-1 shadow-2xs"
-                        title={take.audioOnly ? 'Download the sound recording' : 'Download the video'}
+                        title={take.audioOnly ? 'Download the audio' : 'Download the video'}
                       >
                         <span className="material-symbols-outlined text-[16px]">download</span>
                         <span>Save</span>
@@ -2306,7 +2372,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="font-bold text-ink">Take {previewTake.takeNumber}</span>
                 <span className="font-label-meta text-xs text-ink-soft">
-                  ({formatTime(previewTake.durationSec)}{previewTake.audioOnly ? ', sound only' : ''})
+                  ({formatTime(previewTake.durationSec)}{previewTake.audioOnly ? ', audio only' : ''})
                 </span>
               </div>
               <button
@@ -2319,7 +2385,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
             {previewTake.audioOnly ? (
               <div className="w-full rounded-xl bg-paper-sunk border border-paper-line p-6 flex flex-col items-center gap-3">
-                <p className="font-body-sm text-sm text-ink-soft">No camera was available, so this take has sound only.</p>
+                <p className="font-body-sm text-sm text-ink-soft">No camera was available, so this take is audio only.</p>
                 <audio src={previewTake.url} controls autoPlay className="w-full" />
               </div>
             ) : (
