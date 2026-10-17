@@ -190,8 +190,25 @@ export function tailTokensFromResults(transcripts: string[], count = 8): HeardTo
 // Matches within this many tokens ahead count as "reading on".
 const NEAR_WINDOW = 40;
 // A jump further ahead (the speaker skipped a section) needs at least this many
-// spoken words in a row matching the script, since short phrases repeat.
+// spoken words in a row matching the script, since short phrases repeat...
 const FAR_MIN_WORDS = 4;
+// ...unless the matched phrase occurs only once in the whole script. Then it
+// can't be confused with another spot, so fewer words are enough: 3 words, or
+// 2 words that are each at least this long (so not "it is" or "the reason").
+const UNIQUE_MIN_WORDS = 3;
+const UNIQUE_PAIR_MIN_WORD_LENGTH = 4;
+
+// How many times the exact token sequence tokens[from..to] occurs in the script.
+function occurrences(tokens: SpeechToken[], from: number, to: number): number {
+  const len = to - from + 1;
+  let count = 0;
+  for (let i = 0; i + len <= tokens.length; i++) {
+    let k = 0;
+    while (k < len && tokens[i + k].norm === tokens[from + k].norm) k++;
+    if (k === len && ++count > 1) return count;
+  }
+  return count;
+}
 
 // Returns the new position (index of the next speech token to say). Never moves
 // backward; returns `position` unchanged when the heard words don't match.
@@ -209,7 +226,7 @@ export function advanceSpeechPosition(
   const last = heard[heard.length - 1];
   const lastWordLength = heard.filter((h) => h.word === last.word).reduce((n, h) => n + h.norm.length, 0);
   let near = { pos: position, words: 0 };
-  let far = { pos: position, words: 0 };
+  let far = { pos: position, words: 0, unique: false };
 
   // Try each script token as the landing spot for the newest heard token.
   for (let j = Math.max(0, position - 1); j < tokens.length; j++) {
@@ -231,15 +248,28 @@ export function advanceSpeechPosition(
       const exactNext = words === 1 && j === position && heard[heard.length - 1].norm === tokens[j].norm;
       const trustedSingle = words === 1 && (exactNext || (lastWordLength >= 5 && j - position <= 2));
       if ((words >= 2 || trustedSingle) && words > near.words) near = { pos: j + 1, words };
-    } else if (words >= FAR_MIN_WORDS && words > far.words) {
+    } else if (words >= 2 && words > far.words) {
       // Earliest strongest match wins, so a later repeat of the phrase doesn't.
-      far = { pos: j + 1, words };
+      const unique = occurrences(tokens, j - run + 1, j) === 1;
+      let shortestWord = Infinity;
+      for (let k = j - run + 1; k <= j; k++) shortestWord = Math.min(shortestWord, tokens[k].norm.length);
+      const strongEnough =
+        words >= FAR_MIN_WORDS ||
+        (unique && (words >= UNIQUE_MIN_WORDS || shortestWord >= UNIQUE_PAIR_MIN_WORD_LENGTH));
+      if (strongEnough) far = { pos: j + 1, words, unique };
     }
   }
 
-  // Reading on is the usual case; jump ahead only when the far match is
-  // clearly better than anything nearby.
+  // Reading on is the usual case. Jump ahead when the far match is clearly
+  // better than anything nearby, or is a phrase found nowhere else in the
+  // script and longer than the nearby match (a coincidental "it is" nearby
+  // must not hold back an unmistakable jump).
   let best = near.pos;
-  if (far.words > 0 && (near.words === 0 || far.words >= near.words + 2)) best = far.pos;
+  if (
+    far.words > 0 &&
+    (near.words === 0 || far.words >= near.words + 2 || (far.unique && far.words > near.words))
+  ) {
+    best = far.pos;
+  }
   return Math.max(position, Math.min(best, tokens.length));
 }

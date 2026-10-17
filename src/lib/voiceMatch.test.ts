@@ -154,3 +154,34 @@ describe('voice follow: every word moves the highlight', () => {
     expect(normalizeText('don’t')).toEqual(['do', 'not']);
   });
 });
+
+describe('voice follow: catching a skip quickly but safely', () => {
+  const start = say(0, "most creators don't realize this but the reason your videos feel robotic");
+
+  it('jumps after two words when they form a phrase found only once in the script', () => {
+    // "first take" appears once; skips about 60 words
+    expect(wordAt(say(start, 'first take'))).toBe('works');
+  });
+
+  it('waits for a third word when the two-word phrase appears more than once', () => {
+    // "your eyes" occurs twice in the sample script
+    expect(say(start, 'your eyes')).toBe(start);
+    expect(wordAt(say(start, 'your eyes stay'))).toBe('near');
+  });
+
+  it('does not jump on a unique pair of short common words', () => {
+    // every 2-word phrase with a word under 4 letters needs more evidence
+    // "it waits" occurs once, far ahead, but "it" is too short to be sure
+    expect(say(start, 'it waits')).toBe(start);
+  });
+
+  it('needs four words when the whole script repeats, so it never picks the wrong copy', () => {
+    const doubled = DEFAULT_SCRIPTS[0].content + '\n\n' + DEFAULT_SCRIPTS[0].content;
+    const w = doubled.split(/\s+/).filter(Boolean);
+    const t = buildSpeechTokens(w);
+    const p0 = advanceSpeechPosition(t, 0, tailTokensFromResults(["most creators don't realize this but the reason your videos feel robotic"]));
+    expect(advanceSpeechPosition(t, p0, tailTokensFromResults(['first take works']))).toBe(p0);
+    const p1 = advanceSpeechPosition(t, p0, tailTokensFromResults(['first take works the other']));
+    expect(w[t[p1].wordIndex]).toBe('way');
+  });
+});
