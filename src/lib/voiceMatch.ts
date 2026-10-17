@@ -38,13 +38,19 @@ const NUMBER_WORDS: Record<string, string> = {
 
 const FILLER_WORDS = new Set(["um", "uh", "like", "so", "you know", "ah", "er"]);
 
-export function normalizeText(text: string): string[] {
-  let lower = text.toLowerCase();
+// One precompiled pattern for every contraction (longest first). Building ~40
+// regexes per call was the slowest part of handling each speech update.
+const CONTRACTION_PATTERN = new RegExp(
+  `\\b(${Object.keys(CONTRACTIONS)
+    .sort((a, b) => b.length - a.length)
+    .map((k) => k.replace(/'/g, "'"))
+    .join('|')})\\b`,
+  'gi'
+);
 
-  for (const [contraction, expansion] of Object.entries(CONTRACTIONS)) {
-    const reg = new RegExp(`\\b${contraction}\\b`, 'gi');
-    lower = lower.replace(reg, expansion);
-  }
+export function normalizeText(text: string): string[] {
+  let lower = text.toLowerCase().replace(/[’‘]/g, "'");
+  lower = lower.replace(CONTRACTION_PATTERN, (m) => CONTRACTIONS[m.toLowerCase()] ?? m);
 
   lower = lower.replace(/\b\d+\b/g, (match) => NUMBER_WORDS[match] || match);
   const clean = lower.replace(/[^a-z0-9\s]/g, ' ');
@@ -219,8 +225,11 @@ export function advanceSpeechPosition(
     const words = new Set(heard.slice(heard.length - run).map((h) => h.word)).size;
 
     if (j - position <= NEAR_WINDOW) {
-      // One spoken word is only trusted when it is long and right next to us.
-      const trustedSingle = words === 1 && lastWordLength >= 5 && j - position <= 2;
+      // One spoken word moves the script when it is exactly the next word to
+      // say (so the highlight steps on every word, even short ones, right after
+      // Start or a pause), or when it is long and at most two words ahead.
+      const exactNext = words === 1 && j === position && heard[heard.length - 1].norm === tokens[j].norm;
+      const trustedSingle = words === 1 && (exactNext || (lastWordLength >= 5 && j - position <= 2));
       if ((words >= 2 || trustedSingle) && words > near.words) near = { pos: j + 1, words };
     } else if (words >= FAR_MIN_WORDS && words > far.words) {
       // Earliest strongest match wins, so a later repeat of the phrase doesn't.

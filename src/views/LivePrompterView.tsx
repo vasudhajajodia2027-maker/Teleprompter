@@ -101,6 +101,94 @@ const TEXT_STYLES = [
   { value: 'bold', label: 'Bold' },
 ] as const;
 
+type ParagraphStatus = 'active' | 'past' | 'next' | 'upcoming';
+
+interface ScriptParagraphProps {
+  words: ScriptWord[];
+  paraIdx: number;
+  status: ParagraphStatus;
+  // Next word to say. Only the active paragraph receives the live value;
+  // others get a constant, so their props stay equal while the speaker
+  // reads and React skips re-rendering them.
+  currentWordIndex: number;
+  isNightMode: boolean;
+  dimSpoken: boolean;
+  onLineClick: (paraIdx: number) => void;
+  footer: React.ReactNode;
+}
+
+const ScriptParagraph = React.memo(function ScriptParagraph({
+  words,
+  paraIdx,
+  status,
+  currentWordIndex,
+  isNightMode,
+  dimSpoken,
+  onLineClick,
+  footer,
+}: ScriptParagraphProps) {
+  const isActive = status === 'active';
+  return (
+    <div
+      id={`prompter-para-${paraIdx}`}
+      onClick={() => onLineClick(paraIdx)}
+      className={`relative px-4 py-3 rounded-xl transition-[background-color,color,opacity,box-shadow] duration-300 cursor-pointer ${
+        isActive
+          ? isNightMode
+            ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg scale-[1.01]'
+            : 'bg-marker border-l-4 border-forest shadow-md scale-[1.01]'
+          : status === 'past'
+          ? isNightMode
+            ? 'text-[#6B665C] opacity-40 hover:opacity-75'
+            : 'text-ink-faint opacity-45 hover:opacity-80'
+          : status === 'next'
+          ? isNightMode
+            ? 'text-[#FAF7F0] opacity-90'
+            : 'text-ink opacity-90'
+          : isNightMode
+          ? 'text-[#A39E92] opacity-60 hover:opacity-90'
+          : 'text-ink-soft opacity-65 hover:opacity-90'
+      }`}
+    >
+      {isActive && (
+        <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex items-center text-forest">
+          <span className="material-symbols-outlined text-[24px]">arrow_right</span>
+        </div>
+      )}
+
+      <p className={`${isActive ? (isNightMode ? 'text-[#FAF7F0] font-medium' : 'text-ink font-medium') : ''}`}>
+        {words.map((wordObj) => {
+          const isWordSpoken = wordObj.globalIndex < currentWordIndex;
+          const isWordActive = wordObj.globalIndex === currentWordIndex;
+          return (
+            <span
+              key={wordObj.globalIndex}
+              id={`ft-word-${wordObj.globalIndex}`}
+              className={`inline-block mr-[0.28em] transition-colors duration-150 ${
+                wordObj.cue
+                  ? 'text-[0.5em] align-middle font-label-meta uppercase tracking-wider text-forest opacity-80'
+                  : wordObj.emphasis
+                  ? 'font-bold'
+                  : ''
+              } ${
+                isWordActive && !wordObj.cue
+                  ? 'underline decoration-forest decoration-2 font-bold'
+                  : isWordSpoken && dimSpoken
+                  ? 'opacity-60'
+                  : ''
+              }`}
+            >
+              {wordObj.display}
+            </span>
+          );
+        })}
+      </p>
+
+      {isActive && footer}
+    </div>
+  );
+});
+
 const MIC_BLOCKED_NOTICE =
   'Your microphone is blocked, so the script can’t follow your voice. Allow the mic for this site, or switch to steady auto-scroll.';
 
@@ -693,6 +781,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   ]);
 
   // Scroll a specific line or word so it sits on the reading guide
+  // Words grouped by paragraph once per script (the old render filtered the
+  // whole word list for every paragraph on every update).
+  const wordsByParagraph = useMemo(() => {
+    const groups: ScriptWord[][] = paragraphs.map(() => []);
+    tokenizedWords.forEach((w) => groups[w.paragraphIndex]?.push(w));
+    return groups;
+  }, [paragraphs, tokenizedWords]);
+
   // A new text size or style reflows every line. Keep the word being read on
   // the reading guide (before paint, so the text never visibly jumps), whether
   // the prompter is running or paused.
@@ -738,6 +834,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       }
     }
   };
+
+  // Stable identity so memoized paragraphs don't re-render for a new handler.
+  const handleLineClickRef = useRef(handleLineClick);
+  handleLineClickRef.current = handleLineClick;
+  const onLineClick = useCallback((paraIdx: number) => handleLineClickRef.current(paraIdx), []);
 
   const handleRestartFromTop = () => {
     const container = prompterContainerRef.current;
@@ -833,9 +934,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         setIsListening(true);
 
         // Top guess of every result, finished or not, oldest first.
+        // Only the newest results matter for the next match. The list grows
+        // for the whole listening session, so re-reading all of it made every
+        // update slower the longer the speaker talked.
         const transcripts: string[] = [];
-        for (let i = 0; i < event.results.length; i++) {
-          transcripts.push(event.results[i][0]?.transcript || '');
+        let wordsCollected = 0;
+        for (let i = event.results.length - 1; i >= 0 && wordsCollected < 12; i--) {
+          const t = event.results[i][0]?.transcript || '';
+          transcripts.unshift(t);
+          wordsCollected += t.trim().split(/\s+/).filter(Boolean).length;
         }
         const heard = tailTokensFromResults(transcripts);
         if (heard.length === 0) return;
@@ -1315,6 +1422,38 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     onExit();
   };
 
+  // Status strip under the line being read (only the active paragraph shows it).
+  const activeFooter = (
+          <div className="mt-2 flex items-center justify-between text-xs font-label-meta text-forest pt-1 border-t border-forest/15">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]">
+                {scrollMode === 'voice' ? 'hearing' : 'speed'}
+              </span>
+              <span>
+                {scrollMode === 'voice'
+                  ? isSpeaking
+                    ? 'Speaking'
+                    : micBlocked
+                    ? 'Mic blocked'
+                    : isPaused
+                    ? 'Voice paused'
+                    : 'Listening for speech'
+                  : `${effectiveWpm} WPM Pace`}
+              </span>
+              {isSpeaking && scrollMode === 'voice' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-forest animate-ping"></span>
+              )}
+            </div>
+            {lastRecognizedPhrase && scrollMode === 'voice' ? (
+              <span className="text-[11px] text-ink-soft italic truncate max-w-[180px]">
+                Hearing: &ldquo;{lastRecognizedPhrase}&rdquo;
+              </span>
+            ) : (
+              <span className="text-[10px] text-ink-faint uppercase">Click to re-anchor</span>
+            )}
+          </div>
+  );
+
   return (
     <div
       className={`min-h-screen w-full relative select-none transition-colors duration-300 font-body-sm ${
@@ -1702,103 +1841,29 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             textStyle === 'serif' ? 'font-prompter-reading' : 'font-body-md'
           } ${textStyle === 'bold' ? '[&_*]:font-bold!' : ''}`}
         >
-          {paragraphs.map((para, paraIdx) => {
-            const isPast = paraIdx < activeLineIndex;
-            const isActive = paraIdx === activeLineIndex;
-            // The line after the current one stays readable so you can look ahead.
-            const isNext = paraIdx === activeLineIndex + 1;
-
-            const wordsForThisPara = tokenizedWords.filter((w) => w.paragraphIndex === paraIdx);
-
+          {paragraphs.map((_para, paraIdx) => {
+            const status: ParagraphStatus =
+              paraIdx === activeLineIndex
+                ? 'active'
+                : paraIdx < activeLineIndex
+                ? 'past'
+                : paraIdx === activeLineIndex + 1
+                ? 'next'
+                : 'upcoming';
             return (
-              <div
-                id={`prompter-para-${paraIdx}`}
+              <ScriptParagraph
                 key={paraIdx}
-                onClick={() => handleLineClick(paraIdx)}
-                className={`relative px-4 py-3 rounded-xl transition-[background-color,color,opacity,box-shadow] duration-300 cursor-pointer ${
-                  isActive
-                    ? isNightMode
-                      ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg scale-[1.01]'
-                      : 'bg-marker border-l-4 border-forest shadow-md scale-[1.01]'
-                    : isPast
-                    ? isNightMode
-                      ? 'text-[#6B665C] opacity-40 hover:opacity-75'
-                      : 'text-ink-faint opacity-45 hover:opacity-80'
-                    : isNext
-                    ? isNightMode
-                      ? 'text-[#FAF7F0] opacity-90'
-                      : 'text-ink opacity-90'
-                    : isNightMode
-                    ? 'text-[#A39E92] opacity-60 hover:opacity-90'
-                    : 'text-ink-soft opacity-65 hover:opacity-90'
-                }`}
-              >
-                {isActive && (
-                  <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex items-center text-forest">
-                    <span className="material-symbols-outlined text-[24px]">arrow_right</span>
-                  </div>
-                )}
-
-                <p className={`${isActive ? (isNightMode ? 'text-[#FAF7F0] font-medium' : 'text-ink font-medium') : ''}`}>
-                  {wordsForThisPara.map((wordObj) => {
-                    const isWordSpoken = wordObj.globalIndex < currentWordIndex;
-                    const isWordActive = wordObj.globalIndex === currentWordIndex;
-
-                    return (
-                      <span
-                        key={wordObj.globalIndex}
-                        id={`ft-word-${wordObj.globalIndex}`}
-                        className={`inline-block mr-[0.28em] transition-colors duration-150 ${
-                          wordObj.cue
-                            ? 'text-[0.5em] align-middle font-label-meta uppercase tracking-wider text-forest opacity-80'
-                            : wordObj.emphasis
-                            ? 'font-bold'
-                            : ''
-                        } ${
-                          isWordActive && !wordObj.cue
-                            ? 'underline decoration-forest decoration-2 font-bold'
-                            : isWordSpoken && scrollMode === 'voice'
-                            ? 'opacity-60'
-                            : ''
-                        }`}
-                      >
-                        {wordObj.display}
-                      </span>
-                    );
-                  })}
-                </p>
-
-                {isActive && (
-                  <div className="mt-2 flex items-center justify-between text-xs font-label-meta text-forest pt-1 border-t border-forest/15">
-                    <div className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px]">
-                        {scrollMode === 'voice' ? 'hearing' : 'speed'}
-                      </span>
-                      <span>
-                        {scrollMode === 'voice'
-                          ? isSpeaking
-                            ? 'Speaking'
-                            : micBlocked
-                            ? 'Mic blocked'
-                            : isPaused
-                            ? 'Voice paused'
-                            : 'Listening for speech'
-                          : `${effectiveWpm} WPM Pace`}
-                      </span>
-                      {isSpeaking && scrollMode === 'voice' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-forest animate-ping"></span>
-                      )}
-                    </div>
-                    {lastRecognizedPhrase && scrollMode === 'voice' ? (
-                      <span className="text-[11px] text-ink-soft italic truncate max-w-[180px]">
-                        Hearing: &ldquo;{lastRecognizedPhrase}&rdquo;
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-ink-faint uppercase">Click to re-anchor</span>
-                    )}
-                  </div>
-                )}
-              </div>
+                words={wordsByParagraph[paraIdx]}
+                paraIdx={paraIdx}
+                status={status}
+                currentWordIndex={
+                  status === 'active' ? currentWordIndex : status === 'past' ? Number.MAX_SAFE_INTEGER : -1
+                }
+                isNightMode={isNightMode}
+                dimSpoken={scrollMode === 'voice'}
+                onLineClick={onLineClick}
+                footer={status === 'active' ? activeFooter : null}
+              />
             );
           })}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceSpeechPosition, buildSpeechTokens, describeWords, tailTokensFromResults } from './voiceMatch';
+import { advanceSpeechPosition, buildSpeechTokens, describeWords, normalizeText, tailTokensFromResults } from './voiceMatch';
 import { DEFAULT_SCRIPTS } from '../data/defaultScripts';
 
 // The shipped sample script: what a first-time user reads in the prompter.
@@ -128,5 +128,29 @@ describe('how script words are shown', () => {
     const w = 'say *this* now please'.split(' ');
     const t = buildSpeechTokens(w);
     expect(w[t[advanceSpeechPosition(t, 0, tailTokensFromResults(['say this']))].wordIndex]).toBe('now');
+  });
+});
+
+describe('voice follow: every word moves the highlight', () => {
+  it('steps one word at a time as the browser delivers each new word', () => {
+    const seen: string[] = [];
+    let p = 0;
+    const sentence = "most creators don't realize this but the reason".split(' ');
+    for (let i = 1; i <= sentence.length; i++) {
+      p = say(p, sentence.slice(0, i).join(' '));
+      seen.push(wordAt(p));
+    }
+    expect(seen).toEqual(['creators', "don't", 'realize', 'this,', 'but', 'the', 'reason', 'your']);
+  });
+
+  it('moves on a single short word only when it is exactly the next word', () => {
+    const p = say(0, "most creators don't realize this but");
+    expect(wordAt(p)).toBe('the');
+    expect(wordAt(say(p, 'the'))).toBe('reason');
+    expect(say(p, 'your')).toBe(p); // "your" is two words ahead and short: wait
+  });
+
+  it('treats curly apostrophes like straight ones', () => {
+    expect(normalizeText('don’t')).toEqual(['do', 'not']);
   });
 });
