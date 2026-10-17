@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onNavigate('overview')}
           className="flex items-center gap-3 text-left focus:outline-none cursor-pointer group"
         >
-          <BrandLogo size="sm" subtitleText="App" />
+          <BrandLogo size="sm" showSubtitle={false} />
         </button>
 
         {/* Nav Links */}
@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 : 'font-body-sm text-sm text-on-surface-variant hover:bg-paper-raised hover:text-ink'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">description</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[20px]">description</span>
             <span>My Scripts</span>
           </button>
 
@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 : 'font-body-sm text-sm text-on-surface-variant hover:bg-paper-raised hover:text-ink'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">record_voice_over</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[20px]">record_voice_over</span>
             <span>Live Prompter</span>
           </button>
         </nav>
@@ -87,8 +87,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={signOutUser}
                 title="Sign out"
                 className="text-ink-faint hover:text-ink cursor-pointer p-1.5 rounded hover:bg-paper-sunk transition-colors"
+                aria-label="Sign out"
               >
-                <span className="material-symbols-outlined text-[17px]">logout</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[17px]">logout</span>
               </button>
             </div>
           ) : (
@@ -96,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={signInWithGoogle}
               className="w-full flex items-center justify-center gap-2 py-1.5 px-2 text-ink text-xs font-medium hover:text-forest transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[17px] text-forest">account_circle</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[17px] text-forest">account_circle</span>
               <span>Sign in with Google</span>
             </button>
           )}

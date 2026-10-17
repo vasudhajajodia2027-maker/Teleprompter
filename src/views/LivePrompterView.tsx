@@ -153,7 +153,7 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
     >
       {isActive && (
         <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex items-center text-forest">
-          <span className="material-symbols-outlined text-[24px]">arrow_right</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[24px]">arrow_right</span>
         </div>
       )}
 
@@ -1569,7 +1569,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const activeFooter = (
           <div className="mt-2 flex items-center justify-between text-xs font-label-meta text-forest pt-1 border-t border-forest/15">
             <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[14px]">
+              <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
                 {scrollMode === 'voice' ? 'hearing' : 'speed'}
               </span>
               <span>
@@ -1629,7 +1629,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         <div className="fixed top-18 left-1/2 -translate-x-1/2 z-45 max-w-xl w-full px-4">
           <div className="p-3.5 rounded-xl bg-marker/95 text-ink border border-marker-border shadow-md flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px] text-tertiary">info</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-tertiary">info</span>
               <span>{cameraError || voiceNotice}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -1650,18 +1650,18 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   className="px-2.5 py-1 rounded bg-paper-raised hover:bg-white text-ink font-semibold font-body-sm text-[11px] border border-paper-line shadow-2xs cursor-pointer flex items-center gap-1"
                   title="Open the prompter in a new tab, where the browser can ask for the microphone"
                 >
-                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[14px]">open_in_new</span>
                   <span>Open in new tab</span>
                 </button>
               )}
-              <button
+              <button aria-label="Dismiss"
                 onClick={() => {
                   setCameraError(null);
                   setVoiceNotice(null);
                 }}
                 className="text-ink/60 hover:text-ink cursor-pointer p-1"
               >
-                <span className="material-symbols-outlined text-[16px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
           </div>
@@ -1719,7 +1719,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               }`}
               title="Switch back to voice follow"
             >
-              <span className="material-symbols-outlined text-[15px]">speed</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px]">speed</span>
               <span>Auto-scroll on · Back to voice follow</span>
             </button>
           )}
@@ -1792,7 +1792,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             }`}
             title="View recorded takes"
           >
-            <span className="material-symbols-outlined text-[15px]">video_library</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[15px]">video_library</span>
             <span>Takes: {takes.length}</span>
             {takes.some((t) => !t.isDownloaded) && (
               <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse"></span>
@@ -1842,7 +1842,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             }`}
             title="Leave the prompter (Esc)"
           >
-            <span className="material-symbols-outlined text-[17px]">close</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[17px]">close</span>
             <span className="hidden sm:inline">Exit</span>
             <kbd className="px-1.5 py-0.5 rounded bg-paper-sunk/80 font-label-meta text-[10px] text-ink-faint border border-paper-line/50">
               Esc
@@ -1861,7 +1861,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           title="Show the camera preview"
         >
           <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : 'bg-forest'}`}></span>
-          <span className="material-symbols-outlined text-[14px]">videocam</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[14px]">videocam</span>
           <span>Show camera</span>
         </button>
       )}
@@ -1877,7 +1877,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             title="Hide the camera preview (recording carries on)"
             aria-label="Hide the camera preview"
           >
-            <span className="material-symbols-outlined text-[14px]">close_fullscreen</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[14px]">close_fullscreen</span>
           </button>
           <video
             ref={videoRef}
@@ -1892,7 +1892,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
           {!useLiveWebcam && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 text-white/60">
-              <span className="material-symbols-outlined text-[28px]">videocam_off</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">videocam_off</span>
               <span className="font-label-meta text-[10px] uppercase tracking-wider">Camera off</span>
             </div>
           )}
@@ -1911,7 +1911,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-night-paper/80 text-white font-label-meta text-[10px] hover:bg-night-paper transition-colors flex items-center gap-1 cursor-pointer border border-white/20 z-20"
             title={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
           >
-            <span className="material-symbols-outlined text-[13px]">
+            <span aria-hidden="true" className="material-symbols-outlined text-[13px]">
               {useLiveWebcam ? 'videocam_off' : 'videocam'}
             </span>
             <span>{useLiveWebcam ? 'Off' : 'Webcam'}</span>
@@ -1986,7 +1986,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         style={{ top: '33vh' }}
         className="fixed left-0 right-0 z-20 pointer-events-none flex items-center justify-between px-4 sm:px-12"
       >
-        <span className="material-symbols-outlined text-[18px] text-forest opacity-70">arrow_right</span>
+        <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-forest opacity-70">arrow_right</span>
         <div className="flex-1 mx-2 h-[1px] bg-gradient-to-r from-forest/50 via-forest/20 to-transparent"></div>
       </div>
 
@@ -2072,8 +2072,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   : 'bg-rec hover:bg-rec/90 text-white'
               }`}
               title={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
+              aria-label={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
             >
-              <span className="material-symbols-outlined text-[24px]">
+              <span aria-hidden="true" className="material-symbols-outlined text-[24px]">
                 {isRecording ? 'stop' : 'radio_button_checked'}
               </span>
             </button>
@@ -2089,7 +2090,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               }`}
               title="Start or pause (Space)"
             >
-              <span className="material-symbols-outlined text-[20px]">
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
                 {isPaused ? 'play_arrow' : 'pause'}
               </span>
               <span>{isPaused ? (canResume ? 'Resume' : 'Start') : 'Pause'}</span>
@@ -2104,7 +2105,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               title="Start over from the first line (Home)"
               aria-label="Start over from the first line"
             >
-              <span className="material-symbols-outlined text-[22px]">restart_alt</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[22px]">restart_alt</span>
             </button>
           </div>
 
@@ -2173,7 +2174,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 aria-label="Smaller text"
               >
                 <span className="text-[12px]">A</span>
-                <span className="material-symbols-outlined text-[14px]">remove</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[14px]">remove</span>
               </button>
               <span
                 className={`min-w-[2.5rem] text-center font-label-meta text-xs font-bold select-none ${
@@ -2193,7 +2194,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 aria-label="Bigger text"
               >
                 <span className="text-[16px]">A</span>
-                <span className="material-symbols-outlined text-[14px]">add</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[14px]">add</span>
               </button>
             </div>
 
@@ -2235,8 +2236,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
               }`}
               title="Dark background"
+              aria-label="Dark background"
             >
-              <span className="material-symbols-outlined text-[20px]">
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
                 {isNightMode ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
@@ -2249,8 +2251,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
               }`}
               title="Mirror text for teleprompter glass (M)"
+              aria-label="Mirror text for teleprompter glass (M)"
             >
-              <span className="material-symbols-outlined text-[20px]">flip</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">flip</span>
             </button>
           </div>
         </div>
@@ -2265,22 +2268,22 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           <div className="bg-paper-raised rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-paper-line shadow-2xl text-ink space-y-6 animate-scaleIn">
             <div className="flex items-center justify-between pb-4 border-b border-paper-line">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-forest text-[22px]">video_library</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px]">video_library</span>
                 <h3 className="font-headline-sm text-lg font-semibold text-ink">
                   Recorded takes ({takes.length})
                 </h3>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setShowTakesModal(false)}
                 className="text-ink-soft hover:text-ink p-1 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
             {takes.length === 0 ? (
               <div className="text-center py-8 space-y-3">
-                <span className="material-symbols-outlined text-ink-faint text-4xl">videocam_off</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-ink-faint text-4xl">videocam_off</span>
                 <p className="font-body-sm text-sm text-ink-soft">
                   No takes recorded yet. Click the red Record button (or press <strong>R</strong>) to roll a take.
                 </p>
@@ -2321,7 +2324,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                         className="p-2 rounded-lg bg-paper-raised hover:bg-white text-ink font-body-sm text-xs border border-paper-line cursor-pointer flex items-center gap-1 shadow-2xs"
                         title={take.audioOnly ? 'Play this take (audio only)' : 'Play this take'}
                       >
-                        <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+                        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">play_arrow</span>
                         <span>Play</span>
                       </button>
 
@@ -2330,7 +2333,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                         className="p-2 rounded-lg bg-forest text-on-forest hover:bg-forest-dark font-body-sm text-xs cursor-pointer flex items-center gap-1 shadow-2xs"
                         title={take.audioOnly ? 'Download the audio' : 'Download the video'}
                       >
-                        <span className="material-symbols-outlined text-[16px]">download</span>
+                        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>
                         <span>Save</span>
                       </button>
 
@@ -2338,8 +2341,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                         onClick={() => handleDeleteTake(take.id)}
                         className="p-2 rounded-lg text-ink-faint hover:text-rec cursor-pointer transition-colors"
                         title="Delete take"
+                        aria-label="Delete take"
                       >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">delete</span>
                       </button>
                     </div>
                   </div>
@@ -2375,11 +2379,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   ({formatTime(previewTake.durationSec)}{previewTake.audioOnly ? ', audio only' : ''})
                 </span>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setPreviewTake(null)}
                 className="text-ink-soft hover:text-ink cursor-pointer p-1"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
@@ -2404,7 +2408,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 onClick={() => handleDeleteTake(previewTake.id)}
                 className="text-rec text-xs font-medium hover:underline cursor-pointer flex items-center gap-1"
               >
-                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">delete</span>
                 <span>Delete take</span>
               </button>
 
@@ -2413,7 +2417,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   onClick={() => handleDownloadTake(previewTake)}
                   className="px-4 py-2 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <span className="material-symbols-outlined text-[18px]">download</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">download</span>
                   <span>Download take</span>
                 </button>
                 <button
@@ -2423,7 +2427,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   }}
                   className="px-4 py-2 rounded-lg border border-paper-line hover:bg-paper-sunk text-ink font-body-sm text-sm cursor-pointer flex items-center gap-1.5"
                 >
-                  <span className="material-symbols-outlined text-[18px]">replay</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">replay</span>
                   <span>Retake</span>
                 </button>
                 <button
@@ -2446,14 +2450,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           <div className="bg-paper-raised rounded-2xl max-w-md w-full p-6 sm:p-8 border border-paper-line shadow-2xl text-ink space-y-5 animate-scaleIn">
             <div className="flex items-center justify-between pb-3 border-b border-paper-line">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-forest text-[22px]">keyboard</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px]">keyboard</span>
                 <h3 className="font-headline-sm text-lg font-semibold text-ink">Keyboard Shortcuts</h3>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setShowHelpModal(false)}
                 className="text-ink-soft hover:text-ink cursor-pointer p-1"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 

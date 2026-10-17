@@ -82,15 +82,15 @@ export default function App() {
   // Update browser document title based on view
   useEffect(() => {
     if (currentView === 'privacy') {
-      document.title = 'Privacy Policy — First Take Studio';
+      document.title = 'Privacy Policy — First Take';
     } else if (currentView === 'terms') {
-      document.title = 'Terms of Service — First Take Studio';
+      document.title = 'Terms of Service — First Take';
     } else if (currentView === 'pricing') {
-      document.title = 'Pricing — First Take Studio';
+      document.title = 'Pricing — First Take';
     } else if (currentView === 'checkout') {
-      document.title = 'Join the Waitlist — First Take Studio';
+      document.title = 'Join the Waitlist — First Take';
     } else {
-      document.title = 'First Take Studio — Speech-Responsive Teleprompter';
+      document.title = 'First Take — Speech-Responsive Teleprompter';
     }
   }, [currentView]);
 
@@ -497,14 +497,14 @@ export default function App() {
 
           <div className="pl-64 min-h-screen flex flex-col">
             {/* Top Workspace Header */}
-            <header className="fixed top-0 left-64 right-0 h-16 bg-paper/85 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-paper-line/50 z-40 flex items-center justify-between px-8">
+            <header className="fixed top-0 left-64 right-0 h-16 bg-paper shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-paper-line/50 z-40 flex items-center justify-between px-8">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => handleNavigate('overview')}
                   className="font-label-meta text-xs text-ink-soft uppercase tracking-wider hover:text-ink transition-colors cursor-pointer flex items-center gap-1.5"
                   title="Back to the home page"
                 >
-                  <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
                   <span>Home</span>
                 </button>
               </div>
@@ -512,7 +512,7 @@ export default function App() {
             </header>
 
             {/* Dashboard Content */}
-            <main className="relative pt-16 bg-paper min-h-screen w-full px-8">
+            <main className="relative pt-20 bg-paper min-h-screen w-full px-8">
               {currentView === 'scripts' ? (
                 <MyScriptsView
                   scripts={scripts}

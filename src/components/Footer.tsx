@@ -51,7 +51,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           <p className="font-label-meta text-xs text-ink-faint">
-            © 2026 First Take Studio
+            © 2026 First Take
           </p>
         </div>
       </footer>
@@ -61,11 +61,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="bg-paper-raised rounded-xl max-w-md w-full p-6 shadow-2xl border border-paper-line">
             <div className="flex items-center justify-between pb-4 border-b border-paper-line">
               <h3 className="font-headline-sm text-lg font-semibold text-ink">Keyboard shortcuts</h3>
-              <button 
+              <button aria-label="Close"
                 onClick={() => setShowShortcutsModal(false)}
                 className="text-ink-soft hover:text-ink p-1 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             <div className="py-4 space-y-3 font-body-sm text-sm">

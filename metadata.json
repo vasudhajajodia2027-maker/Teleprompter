@@ -1,5 +1,5 @@
 {
-  "name": "First Take Studio",
+  "name": "First Take",
   "description": "A teleprompter that follows your voice, so you can record in fewer takes.",
   "requestFramePermissions": ["camera", "microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

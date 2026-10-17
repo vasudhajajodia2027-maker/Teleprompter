@@ -101,7 +101,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               <div className="flex items-center gap-4">
                 {/* Audio Meter Indicator */}
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-paper-raised border border-paper-line/50">
-                  <span className="material-symbols-outlined text-[16px] text-forest">mic</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-forest">mic</span>
                   <div className="flex items-end gap-0.5 h-3.5 w-12">
                     <span 
                       className="w-1 bg-forest rounded-full transition-all duration-150" 
@@ -135,8 +135,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     onClick={() => onNavigate('prompter')} 
                     className="p-1 rounded hover:bg-paper-raised hover:text-ink cursor-pointer"
                     title="Prompter Settings"
+                    aria-label="Prompter Settings"
                   >
-                    <span className="material-symbols-outlined text-[18px]">settings</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px]">settings</span>
                   </button>
                 </div>
               </div>
@@ -162,7 +163,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </div>
                 <div className="px-2.5 py-1 bg-paper-sunk flex items-center justify-between text-ink-soft">
                   <span className="font-label-meta text-[11px]">Live Camera</span>
-                  <span className="material-symbols-outlined text-[14px]">videocam</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[14px]">videocam</span>
                 </div>
               </div>
 
@@ -194,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                           )}
                         </p>
                         <div className="mt-2 flex items-center gap-2 text-forest font-label-meta text-xs">
-                          <span className="material-symbols-outlined text-[15px]">hearing</span>
+                          <span aria-hidden="true" className="material-symbols-outlined text-[15px]">hearing</span>
                           <span>The text follows your voice as you speak</span>
                         </div>
                       </div>
@@ -263,25 +264,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="bg-paper-sunk rounded-xl p-8 lg:p-10 flex flex-col justify-between border border-paper-line">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-rec-tint text-rec font-label-meta text-xs font-semibold">
-                <span className="material-symbols-outlined text-[16px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">close</span>
                 Fixed-speed prompter
               </div>
               <h3 className="font-headline-sm text-xl font-semibold text-ink">The text sets the pace.</h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                     You read at the prompter's speed, with no room to pause for effect.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                     Changing the speed takes a foot pedal or a handheld clicker, which pulls your attention away from what you're saying.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-rec text-[20px] shrink-0 mt-0.5">remove_circle_outline</span>
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                     Many online recorders upload your takes to their servers.
                   </p>
@@ -299,25 +300,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="bg-paper-raised rounded-xl p-8 lg:p-10 flex flex-col justify-between border border-forest/30 shadow-sm">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-forest-tint text-forest font-label-meta text-xs font-semibold">
-                <span className="material-symbols-outlined text-[16px]">check</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">check</span>
                 First Take
               </div>
               <h3 className="font-headline-sm text-xl font-semibold text-ink">Your voice sets the pace.</h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
                     The app listens through your microphone and highlights the word you're on.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
                     If you pause, cough, or go off script, the text waits where you left off.
                   </p>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
                     Video is recorded and saved right in your browser. It never goes to our servers.
                   </p>
@@ -362,7 +363,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
               <div className="p-4 rounded-lg bg-paper-sunk font-label-meta text-xs text-ink-soft flex items-center justify-between border border-paper-line/50">
                 <span>Supports .txt • .md</span>
-                <span className="material-symbols-outlined text-[18px]">content_paste</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">content_paste</span>
               </div>
             </div>
 
@@ -377,7 +378,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
               <div className="p-4 rounded-lg bg-marker-soft font-label-meta text-xs text-ink flex items-center justify-between border border-marker-border/40">
                 <span className="font-medium">Follows your words</span>
-                <span className="material-symbols-outlined text-[18px] text-forest">mic</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-forest">mic</span>
               </div>
             </div>
 
@@ -392,7 +393,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
               <div className="p-4 rounded-lg bg-paper-sunk font-label-meta text-xs text-ink-soft flex items-center justify-between border border-paper-line/50">
                 <span>Saves to your Downloads folder</span>
-                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">download</span>
               </div>
             </div>
           </div>
@@ -407,8 +408,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               Pricing
             </div>
             <h2 className="font-headline-lg text-3xl sm:text-4xl text-ink font-display">
-              One price, paid once.
+              Reserve the early price.
             </h2>
+            <p className="font-body-sm text-sm text-ink-soft">
+              Buying opens soon. Join the list now to get ₹199 / $2 when it does. Nothing to pay today.
+            </p>
           </div>
 
           {/* Single Card */}
@@ -426,29 +430,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
               <div className="flex items-baseline gap-1.5 shrink-0">
                 <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, once</span>
+                <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
               </div>
             </div>
 
             <ul className="space-y-3.5 font-body-sm text-sm text-ink">
               <li className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                 <span>Unlimited scripts in your library</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                 <span>Unlimited recording takes</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                 <span>Record with your camera and download the video</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                 <span>Dark background, and mirrored text for teleprompter glass</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                 <span>Every future update included</span>
               </li>
             </ul>
@@ -458,8 +462,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 onClick={handleBuy}
                 className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Join the waitlist (early price ₹199 / $2)</span>
-                <span className="material-symbols-outlined text-[18px]">bolt</span>
+                <span>Reserve the early price</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">bolt</span>
               </button>
               <p className="font-label-meta text-xs text-ink-soft">
                 Try the free demo first. No sign-up needed.

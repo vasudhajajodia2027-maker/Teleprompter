@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, isPro }
           onClick={() => onNavigate('overview')}
           className="flex items-center gap-3 text-left focus:outline-none group cursor-pointer"
         >
-          <BrandLogo size="md" subtitleText="Studio" />
+          <BrandLogo size="md" showSubtitle={false} />
           {isPro && (
             <span className="font-label-meta text-[11px] bg-forest-tint text-forest px-2 py-0.5 rounded font-bold uppercase tracking-wider">
               PRO

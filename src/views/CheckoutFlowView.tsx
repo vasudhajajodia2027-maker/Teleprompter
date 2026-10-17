@@ -63,14 +63,15 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             onClick={onExit}
             className="flex items-center gap-3 text-left focus:outline-none cursor-pointer group"
             title="Return to Home"
+            aria-label="Return to Home"
           >
-            <BrandLogo size="md" subtitleText="STUDIO" />
+            <BrandLogo size="md" showSubtitle={false} />
           </button>
 
           {/* Right controls: 'WAITLIST' badge + separate 'Support' link with clear spacing */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-raised border border-paper-line text-ink-soft shadow-xs">
-              <span className="material-symbols-outlined text-[15px] text-forest">lock</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-forest">lock</span>
               <span className="font-label-meta tracking-widest text-[11px] uppercase font-bold text-ink-soft">
                 WAITLIST
               </span>
@@ -105,9 +106,9 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 EARLY PRICE · ₹199 / $2
               </div>
               <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
-                Join the{' '}
+                Reserve the{' '}
                 <mark className="bg-marker text-on-marker px-2.5 py-0.5 rounded-none font-normal italic inline-block">
-                  waitlist
+                  early price
                 </mark>
               </h1>
             </div>
@@ -131,7 +132,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 </div>
                 <div className="flex items-baseline gap-1 shrink-0">
                   <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, once</span>
+                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
                 </div>
               </div>
 
@@ -142,27 +143,27 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 </span>
                 <ul className="space-y-2.5 font-body-sm text-sm text-ink">
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
                     <span>Unlimited scripts in your library</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
                     <span>Unlimited recording takes</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
                     <span>Camera &amp; mic recording, saved to your computer</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
                     <span>Dark background, and mirrored text for teleprompter glass</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
                     <span>Script follows your voice</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
                     <span>Every future update included</span>
                   </li>
                 </ul>
@@ -172,7 +173,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               <form onSubmit={handleDetailsSubmit} className="pt-4 border-t border-paper-line space-y-4">
                 <div className="space-y-1.5">
                   <label htmlFor="customer-email" className="font-title-md text-sm font-semibold text-ink block">
-                    Where should we send your access link?
+                    Where should we email you when buying opens?
                   </label>
                   <input
                     id="customer-email"
@@ -206,12 +207,12 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                         <span>Saving your spot...</span>
                       </>
                     ) : (
-                      <span>Join the list — checkout opens soon →</span>
+                      <span>Reserve the early price →</span>
                     )}
                   </button>
 
                   <p className="text-center font-label-meta text-xs text-ink-soft leading-relaxed px-2">
-                    Checkout opens soon. We'll email you when it opens. No charge today.
+                    Buying opens soon. We'll email you when it does, at the early price. Nothing to pay today.
                   </p>
                 </div>
               </form>
@@ -220,15 +221,15 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             {/* Trust Row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0">shield</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0">shield</span>
                 <span className="font-label-meta text-xs font-semibold text-ink">Videos stay on your device</span>
               </div>
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0">graphic_eq</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0">graphic_eq</span>
                 <span className="font-label-meta text-xs font-semibold text-ink">Script follows your voice</span>
               </div>
               <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
-                <span className="material-symbols-outlined text-forest text-[20px] shrink-0">verified</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0">verified</span>
                 <span className="font-label-meta text-xs font-semibold text-ink">14-Day Guarantee</span>
               </div>
             </div>
@@ -243,7 +244,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             {/* Header */}
             <div className="space-y-3">
               <div className="w-16 h-16 rounded-full bg-forest-tint text-forest mx-auto flex items-center justify-center shadow-xs">
-                <span className="material-symbols-outlined text-[36px]">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[36px]">check_circle</span>
               </div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest-tint text-forest font-label-eyebrow text-xs uppercase tracking-widest font-bold">
                 EARLY ACCESS
@@ -283,7 +284,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                     onClick={onOpenScripts}
                     className="flex-1 py-3 px-4 rounded-lg bg-paper-sunk hover:bg-paper-line/50 text-ink font-body-sm text-sm font-medium border border-paper-line transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[18px] text-forest">edit_document</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-forest">edit_document</span>
                     <span>Open Script Editor</span>
                   </button>
 
@@ -291,7 +292,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                     onClick={onExit}
                     className="flex-1 py-3 px-4 rounded-lg bg-paper-raised hover:bg-paper-sunk text-ink font-body-sm text-sm font-medium border border-paper-line transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[18px] text-ink-soft">arrow_back</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">arrow_back</span>
                     <span>Back to Homepage</span>
                   </button>
                 </div>
@@ -310,7 +311,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               <h2>Payment confirmed</h2>
               <p>You're all set</p>
               <div>YOUR PLAN: Full version — yours forever</div>
-              <div>First Take Studio — one-time purchase: ₹199 / $2 paid via Stripe</div>
+              <div>First Take — one-time purchase: ₹199 / $2 paid via Stripe</div>
               <button>Open the teleprompter →</button>
               <button>Download receipt</button>
             </div>
@@ -321,7 +322,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
       {/* 3. SHARED FOOTER ON ALL CHECKOUT SCREENS */}
       <footer className="border-t border-paper-line py-8 mt-12 bg-paper-sunk/30">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-faint font-body-sm">
-          <p>© 2026 First Take Studio</p>
+          <p>© 2026 First Take</p>
           <div className="flex items-center gap-4">
             <a
               href="/privacy"
@@ -353,14 +354,14 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
           <div className="bg-paper-raised rounded-2xl max-w-md w-full p-8 border border-paper-line shadow-xl space-y-6 text-left animate-scaleIn">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-forest text-[22px]">contact_support</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px]">contact_support</span>
                 <h3 className="font-headline-sm text-lg font-semibold text-ink">First Take Support</h3>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setShowSupportModal(false)}
                 className="text-ink-faint hover:text-ink cursor-pointer p-1"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 

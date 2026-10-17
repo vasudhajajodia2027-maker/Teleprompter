@@ -33,7 +33,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
             </h1>
 
             <p className="font-lead text-base sm:text-xl text-ink-soft max-w-[620px] mx-auto leading-relaxed">
-              Pay once and keep it. No subscription.
+              Pay once and keep it. No subscription. Buying opens soon: reserve the early price now, with nothing to pay today.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                 </div>
                 <div className="flex items-baseline gap-1.5 shrink-0">
                   <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, once</span>
+                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
                 </div>
               </div>
 
@@ -68,27 +68,27 @@ export const PricingView: React.FC<PricingViewProps> = ({
                 </span>
                 <ul className="space-y-3.5 font-body-sm text-sm text-ink pt-1">
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                     <span>Unlimited scripts in your library</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                     <span>Unlimited recording takes</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                     <span>Camera &amp; mic recording, saved to your computer</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                     <span>Dark background, and mirrored text for teleprompter glass</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                     <span>Script follows your voice</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
                     <span>Every future update included</span>
                   </li>
                 </ul>
@@ -99,8 +99,8 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   onClick={onStartCheckout}
                   className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all duration-150 shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{license.isActive ? 'Active: yours to keep' : 'Join the waitlist (early price ₹199 / $2)'}</span>
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  <span>{license.isActive ? 'Active: yours to keep' : 'Reserve the early price'}</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <p className="font-label-meta text-xs text-ink-soft">
                   Try the free demo first. No sign-up needed.
@@ -113,7 +113,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
           <div className="mt-8 max-w-xl mx-auto p-4 rounded-lg bg-paper-sunk/80 border border-paper-line flex items-center justify-between gap-4 text-left">
             <div className="flex items-center gap-3">
               <span className="w-8 h-8 rounded-full bg-paper-raised flex items-center justify-center shrink-0 border border-paper-line">
-                <span className="material-symbols-outlined text-[18px] text-ink-soft">edit_note</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">edit_note</span>
               </span>
               <p className="font-body-sm text-sm text-ink-soft">
                 Try the prompter with your own script, free.
@@ -147,7 +147,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
               <div className="p-6 space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
-                    <span className="material-symbols-outlined text-forest text-[20px]">web</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">web</span>
                     Which browsers and operating systems are supported?
                   </h3>
                   <span className="font-label-meta text-xs text-ink-faint">Specs</span>
@@ -160,7 +160,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
               <div className="p-6 space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
-                    <span className="material-symbols-outlined text-forest text-[20px]">videocam</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">videocam</span>
                     What video format do I get?
                   </h3>
                   <span className="font-label-meta text-xs text-ink-faint">Formats</span>
@@ -173,7 +173,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
               <div className="p-6 space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
-                    <span className="material-symbols-outlined text-forest text-[20px]">lock</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">lock</span>
                     Where are my video recordings and scripts stored?
                   </h3>
                   <span className="font-label-meta text-xs text-ink-faint">Privacy</span>
@@ -186,7 +186,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
               <div className="p-6 space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
-                    <span className="material-symbols-outlined text-forest text-[20px]">sync_alt</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">sync_alt</span>
                     Can I use First Take across multiple devices?
                   </h3>
                   <span className="font-label-meta text-xs text-ink-faint">Licensing</span>

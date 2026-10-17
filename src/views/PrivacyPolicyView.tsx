@@ -7,7 +7,7 @@ interface PrivacyPolicyViewProps {
 export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.title = 'Privacy Policy — First Take Studio';
+    document.title = 'Privacy Policy — First Take';
   }, []);
 
   return (
@@ -18,7 +18,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           onClick={() => onNavigate('overview')}
           className="inline-flex items-center gap-2 text-ink-soft hover:text-ink font-label-meta text-xs uppercase tracking-wider transition-colors cursor-pointer"
         >
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
           <span>Back to Home</span>
         </button>
 
@@ -42,14 +42,14 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
         </h1>
 
         <p className="font-body-md text-base sm:text-lg text-ink-soft leading-relaxed max-w-2xl">
-          Your video recordings stay on your device. This policy explains what First Take Studio collects, why, and who else handles it.
+          Your video recordings stay on your device. This policy explains what First Take collects, why, and who else handles it.
         </p>
       </header>
 
       {/* Plain English Summary Callout */}
       <div className="my-8 p-6 sm:p-7 rounded-2xl bg-forest-tint/60 border border-forest/20 space-y-3">
         <div className="flex items-center gap-2 text-forest font-label-eyebrow text-xs uppercase tracking-wider font-bold">
-          <span className="material-symbols-outlined text-[18px]">verified_user</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">verified_user</span>
           <span>Summary in Plain English</span>
         </div>
         <ul className="space-y-2 font-body-sm text-sm text-ink-soft leading-relaxed">
@@ -80,7 +80,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              First Take Studio (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) provides a speech-responsive teleprompter application accessible via the web. It is made for creators, teachers and anyone who records talks and videos.
+              First Take (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) provides a speech-responsive teleprompter application accessible via the web. It is made for creators, teachers and anyone who records talks and videos.
             </p>
             <p>
               For any questions regarding this policy or your personal data, you can reach our operator directly at{' '}
@@ -154,7 +154,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              First Take Studio uses these third-party services:
+              First Take uses these third-party services:
             </p>
             <ul className="space-y-2 list-disc list-inside pl-2">
               <li>
@@ -201,7 +201,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               Paid checkout is not currently live (we are currently operating in a waitlist phase). When payment functionality opens for the one-time license (early price ₹199 / $2), all transactions will be processed directly through Stripe, a PCI-DSS Level 1 certified payment processor.
             </p>
             <p>
-              First Take Studio will never receive, store, or process your credit card numbers, CVV codes, or bank credentials. All financial information is handled entirely within Stripe&apos;s encrypted payment infrastructure.
+              First Take will never receive, store, or process your credit card numbers, CVV codes, or bank credentials. All financial information is handled entirely within Stripe&apos;s encrypted payment infrastructure.
             </p>
           </div>
         </section>
@@ -240,7 +240,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              First Take Studio is a professional productivity tool and is not directed at children under the age of 13. We do not knowingly collect or solicit personal information from children under 13. If we discover that personal information from a child under 13 has been collected, we will delete that information immediately.
+              First Take is a professional productivity tool and is not directed at children under the age of 13. We do not knowingly collect or solicit personal information from children under 13. If we discover that personal information from a child under 13 has been collected, we will delete that information immediately.
             </p>
           </div>
         </section>
@@ -255,7 +255,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              We may update this Privacy Policy from time to time to reflect changes in our legal obligations, features, or operational practices. When updates are published, we will revise the &ldquo;Effective Date&rdquo; at the top of this document. Continued use of First Take Studio after updates are posted signifies your acknowledgement of the revised terms.
+              We may update this Privacy Policy from time to time to reflect changes in our legal obligations, features, or operational practices. When updates are published, we will revise the &ldquo;Effective Date&rdquo; at the top of this document. Continued use of First Take after updates are posted signifies your acknowledgement of the revised terms.
             </p>
           </div>
         </section>
@@ -273,7 +273,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               If you have any questions, comments, or privacy-related requests, please contact our team directly:
             </p>
             <div className="p-4 rounded-xl bg-paper-sunk border border-paper-line">
-              <p className="font-semibold text-ink">First Take Studio</p>
+              <p className="font-semibold text-ink">First Take</p>
               <p className="text-ink-soft">Attn: Privacy &amp; Data Protection</p>
               <p className="pt-1">
                 Email:{' '}

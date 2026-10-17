@@ -199,7 +199,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 className="text-ink-soft hover:text-ink flex items-center gap-1 font-label-meta text-xs cursor-pointer mr-1"
                 title="Back to scripts"
               >
-                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
                 <span>Scripts</span>
               </button>
               <span className="text-paper-line-strong">/</span>
@@ -226,7 +226,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="material-symbols-outlined text-[15px] text-forest">check_circle</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-forest">check_circle</span>
               <p className="font-label-meta text-xs text-ink-soft">{saveStatus}</p>
             </div>
           </div>
@@ -238,7 +238,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
               className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-paper-raised text-ink font-body-sm text-sm hover:bg-paper-sunk transition-colors border border-paper-line cursor-pointer"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px] text-ink-soft">speed</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">speed</span>
               <span>Pace Guide</span>
             </button>
             <button
@@ -246,7 +246,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
               className="flex items-center gap-2.5 px-5 py-2.5 rounded-lg bg-forest text-on-forest font-body-sm text-sm hover:bg-forest-dark transition-all transform active:scale-95 shadow-xs cursor-pointer font-medium"
               type="button"
             >
-              <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">play_arrow</span>
               <span className="tracking-wide">Open Prompter</span>
             </button>
           </div>
@@ -265,7 +265,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   title="Insert a [PAUSE 2s] note"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-tertiary">timer</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-tertiary">timer</span>
                   <span>+ 2s Pause</span>
                 </button>
                 <button
@@ -274,7 +274,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   title="Insert a [CAMERA LOOK] note"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-primary">visibility</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-primary">visibility</span>
                   <span>+ Lens Cue</span>
                 </button>
                 <button
@@ -283,7 +283,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   title="Stress the selected words, or the word at the cursor. Shown in bold in the prompter."
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-ink-soft">format_italic</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">format_italic</span>
                   <span>Stress</span>
                 </button>
               </div>
@@ -301,7 +301,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   className="cursor-pointer px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors border border-paper-line/50"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-ink-soft">upload_file</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">upload_file</span>
                   <span>Import .txt / .md</span>
                 </button>
                 <button
@@ -319,7 +319,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             <div className="relative bg-paper-raised rounded-xl p-8 sm:p-10 border border-paper-line shadow-xs">
               {/* Speech Cadence Guide Overlay */}
               <div className="mb-6 p-4 rounded-lg bg-marker-soft flex items-start gap-3 border border-marker-border/40">
-                <span className="material-symbols-outlined text-[20px] text-on-tertiary-container mt-0.5 shrink-0">
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-on-tertiary-container mt-0.5 shrink-0">
                   info
                 </span>
                 <div className="flex flex-col gap-0.5">
@@ -349,7 +349,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
               {/* Script Meta Footer Hairline Strip */}
               <div className="mt-8 pt-4 bg-paper-sunk/40 -mx-8 sm:-mx-10 -mb-8 sm:-mb-10 px-8 sm:px-10 py-3.5 rounded-b-xl flex flex-wrap items-center justify-between gap-4 border-t border-paper-line/50">
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[16px] text-forest">analytics</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-forest">analytics</span>
                   <span className="font-label-meta text-xs text-ink">
                     <span className="font-bold">{words}</span> words ·{' '}
                     <span className="font-bold">{formattedReadTime}</span> estimated read time
@@ -366,18 +366,18 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             {showProTip && (
               <div className="bg-forest-tint rounded-lg p-4 flex items-center justify-between gap-4 border border-forest/20">
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-forest text-[22px] shrink-0">psychology</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px] shrink-0">psychology</span>
                   <p className="font-body-sm text-sm text-ink leading-relaxed">
                     <span className="font-semibold text-primary">Pro Delivery Tip:</span> Maintain natural eye movement
                     by placing your laptop or mobile display directly beneath your lens glass.
                   </p>
                 </div>
-                <button
+                <button aria-label="Close"
                   onClick={() => setShowProTip(false)}
                   className="shrink-0 text-ink-soft hover:text-ink cursor-pointer p-1"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               </div>
             )}
@@ -389,7 +389,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             <div className="bg-paper-raised rounded-xl p-6 flex flex-col gap-5 border border-paper-line shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-forest">speed</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-forest">speed</span>
                   <h2 className="font-title-md text-base sm:text-lg font-semibold text-ink">Reading pace</h2>
                 </div>
                 <span className="font-label-meta text-xs px-2.5 py-0.5 rounded bg-paper-sunk text-ink font-semibold border border-paper-line/50">
@@ -428,7 +428,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 type="button"
               >
                 <span className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[18px] text-ink-soft">content_copy</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">content_copy</span>
                   Duplicate script
                 </span>
                 
@@ -440,10 +440,10 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 type="button"
               >
                 <span className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[18px] text-ink-soft">file_download</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">file_download</span>
                   Download as a .txt file
                 </span>
-                <span className="material-symbols-outlined text-[16px] text-ink-faint">download</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-ink-faint">download</span>
               </button>
 
               <div className="h-[1px] bg-paper-line my-1"></div>
@@ -454,7 +454,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 type="button"
               >
                 <span className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">delete</span>
                   Delete script
                 </span>
               </button>
