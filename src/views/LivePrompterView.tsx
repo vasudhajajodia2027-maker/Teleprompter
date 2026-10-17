@@ -68,6 +68,7 @@ interface PrompterTake {
   blob: Blob;
   url: string;
   mimeType: string;
+  audioOnly: boolean; // recorded without a camera
   createdAt: string;
   isDownloaded: boolean;
 }
@@ -188,6 +189,15 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
     </div>
   );
 });
+
+// Speech recognition watchdog: checked every WATCHDOG_MS. A recognizer that
+// returns no words during DEAF_AFTER_MS of detected speech is replaced, and so
+// is one whose unfinished result reaches LONG_RESULT_WORDS (at the next pause)
+// or MAX_RESULT_WORDS (at once).
+const WATCHDOG_MS = 500;
+const DEAF_AFTER_MS = 6000;
+const LONG_RESULT_WORDS = 40;
+const MAX_RESULT_WORDS = 90;
 
 const MIC_BLOCKED_NOTICE =
   'Your microphone is blocked, so the script can’t follow your voice. Allow the mic for this site, or switch to steady auto-scroll.';
@@ -911,121 +921,197 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       return;
     }
 
+    // Chrome's recognizer ends itself after pauses, can go deaf (hearing
+    // speech but returning no words and no error), and keeps one unfinished
+    // result growing while the speaker talks without a break. Every listening
+    // session gets a fresh recognizer, started the moment the last one ends,
+    // and a watchdog replaces a recognizer that has gone deaf or run long.
     let recognition: SpeechRecognitionInstance | null = null;
     let isDisposed = false;
+    let stopped = false; // microphone blocked: never restart
+    let startedAt = 0;
+    let quickEnds = 0;
+    let speechWithoutWordsMs = 0;
+    let longResultPending = false;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (fn: () => void, ms: number) => {
+      const id = setTimeout(() => {
+        timers.delete(id);
+        fn();
+      }, ms);
+      timers.add(id);
+    };
 
-    try {
-      recognition = new SpeechRec();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = speechLang;
-      recognition.maxAlternatives = 1;
+    // Each result moves the reading position to the last script word heard.
+    const handleResult = (event: SpeechRecognitionEvent) => {
+      setIsListening(true);
 
-      recognition.onaudiostart = () => {
-        if (!isDisposed) setIsListening(true);
-      };
-      recognition.onspeechstart = () => {
-        if (!isDisposed) setIsListening(true);
-      };
+      // A result that is still unfinished after this many words is replaced
+      // at the speaker's next pause, and immediately at the hard limit.
+      const newest = event.results[event.results.length - 1];
+      if (newest && !newest.isFinal) {
+        const newestWords = (newest[0]?.transcript || '').trim().split(/\s+/).filter(Boolean).length;
+        if (newestWords >= LONG_RESULT_WORDS) longResultPending = true;
+        if (newestWords >= MAX_RESULT_WORDS) later(() => replaceRecognizer('unfinished result too long'), 0);
+      }
 
-      // Each result moves the reading position to the last script word heard.
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        if (isDisposed) return;
-        setIsListening(true);
+      // Top guess of every result, finished or not, oldest first.
+      // Only the newest results matter for the next match. The list grows
+      // for the whole listening session, so re-reading all of it made every
+      // update slower the longer the speaker talked.
+      const transcripts: string[] = [];
+      let wordsCollected = 0;
+      for (let i = event.results.length - 1; i >= 0 && wordsCollected < 12; i--) {
+        const t = event.results[i][0]?.transcript || '';
+        transcripts.unshift(t);
+        wordsCollected += t.trim().split(/\s+/).filter(Boolean).length;
+      }
+      const heard = tailTokensFromResults(transcripts);
+      if (heard.length === 0) return;
+      speechWithoutWordsMs = 0;
+      setLastRecognizedPhrase(heard.slice(-4).map((h) => h.norm).join(' '));
 
-        // Top guess of every result, finished or not, oldest first.
-        // Only the newest results matter for the next match. The list grows
-        // for the whole listening session, so re-reading all of it made every
-        // update slower the longer the speaker talked.
-        const transcripts: string[] = [];
-        let wordsCollected = 0;
-        for (let i = event.results.length - 1; i >= 0 && wordsCollected < 12; i--) {
-          const t = event.results[i][0]?.transcript || '';
-          transcripts.unshift(t);
-          wordsCollected += t.trim().split(/\s+/).filter(Boolean).length;
-        }
-        const heard = tailTokensFromResults(transcripts);
-        if (heard.length === 0) return;
-        setLastRecognizedPhrase(heard.slice(-4).map((h) => h.norm).join(' '));
+      const prevPos = speechPosRef.current;
+      const nextPos = advanceSpeechPosition(speechTokens, prevPos, heard);
+      if (nextPos <= prevPos) return;
 
-        const prevPos = speechPosRef.current;
-        const nextPos = advanceSpeechPosition(speechTokens, prevPos, heard);
-        if (nextPos <= prevPos) return;
+      speechPosRef.current = nextPos;
+      wordTrackingRef.current = true;
+      const wordIdx =
+        nextPos >= speechTokens.length
+          ? tokenizedWords.length - 1
+          : speechTokens[nextPos].wordIndex;
+      targetWordIndexRef.current = wordIdx;
+      setCurrentWordIndex(wordIdx);
+      setActiveLineIndex(tokenizedWords[wordIdx]?.paragraphIndex ?? 0);
 
-        speechPosRef.current = nextPos;
-        wordTrackingRef.current = true;
-        const wordIdx =
-          nextPos >= speechTokens.length
-            ? tokenizedWords.length - 1
-            : speechTokens[nextPos].wordIndex;
-        targetWordIndexRef.current = wordIdx;
-        setCurrentWordIndex(wordIdx);
-        setActiveLineIndex(tokenizedWords[wordIdx]?.paragraphIndex ?? 0);
-
-        // Learn the speaker's pace over the last 15s for the time-left estimate
-        const now = performance.now();
-        paceHistoryRef.current.push({ time: now, wordIndex: wordIdx });
-        paceHistoryRef.current = paceHistoryRef.current.filter((p) => now - p.time <= 15000);
-        if (paceHistoryRef.current.length >= 2) {
-          const first = paceHistoryRef.current[0];
-          const dtMin = (now - first.time) / 60000;
-          const dw = wordIdx - first.wordIndex;
-          if (dtMin >= 0.05 && dw > 0) {
-            const measuredWpm = dw / dtMin;
-            if (measuredWpm >= 50 && measuredWpm <= 300) {
-              setDynamicWpm(Math.min(220, Math.max(80, Math.round(measuredWpm))));
-            }
+      // Learn the speaker's pace over the last 15s for the time-left estimate
+      const now = performance.now();
+      paceHistoryRef.current.push({ time: now, wordIndex: wordIdx });
+      paceHistoryRef.current = paceHistoryRef.current.filter((p) => now - p.time <= 15000);
+      if (paceHistoryRef.current.length >= 2) {
+        const first = paceHistoryRef.current[0];
+        const dtMin = (now - first.time) / 60000;
+        const dw = wordIdx - first.wordIndex;
+        if (dtMin >= 0.05 && dw > 0) {
+          const measuredWpm = dw / dtMin;
+          if (measuredWpm >= 50 && measuredWpm <= 300) {
+            setDynamicWpm(Math.min(220, Math.max(80, Math.round(measuredWpm))));
           }
         }
+      }
+    };
+
+    // Plain-English error reporting without breaking volume-based scrolling
+    const handleError = (err: string, message?: string) => {
+      console.warn('SpeechRecognition error:', err, message);
+
+      if (err === 'no-speech' || err === 'aborted') {
+        return;
+      }
+
+      if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
+        // No mic means neither word matching nor volume scrolling can run; stop retrying.
+        stopped = true;
+        recognitionRef.current = null;
+        setIsListening(false);
+        setMicBlocked(true);
+        setVoiceNotice(err === 'audio-capture' ? 'No microphone found. Plug one in, or switch to steady auto-scroll.' : MIC_BLOCKED_NOTICE);
+      } else if (err === 'network') {
+        wordTrackingRef.current = false;
+        setVoiceNotice('Word tracking is offline right now, so the script follows the sound of your voice instead.');
+      } else {
+        wordTrackingRef.current = false;
+        setVoiceNotice('Word tracking paused for a moment. The script still follows the sound of your voice.');
+      }
+    };
+
+    const startRecognizer = () => {
+      if (isDisposed || stopped) return;
+      const r = new SpeechRec();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = speechLang;
+      r.maxAlternatives = 1;
+
+      // Events from a recognizer that has been replaced are ignored.
+      r.onaudiostart = () => {
+        if (!isDisposed && recognition === r) setIsListening(true);
       };
-
-      // 4. Plain-English error reporting without breaking volume-based scrolling
-      recognition.onerror = (event: any) => {
-        if (isDisposed) return;
-        const err = event.error;
-        console.warn('SpeechRecognition error:', err, event.message);
-
-        if (err === 'no-speech' || err === 'aborted') {
+      r.onspeechstart = () => {
+        if (!isDisposed && recognition === r) setIsListening(true);
+      };
+      r.onresult = (event: SpeechRecognitionEvent) => {
+        if (!isDisposed && recognition === r) handleResult(event);
+      };
+      r.onerror = (event: any) => {
+        if (!isDisposed && recognition === r) handleError(event.error, event.message);
+      };
+      r.onend = () => {
+        if (isDisposed || recognition !== r) return;
+        if (stopped) {
+          setIsListening(false);
           return;
         }
-
-        if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
-          // No mic means neither word matching nor volume scrolling can run; stop retrying.
-          recognitionRef.current = null;
-          setIsListening(false);
-          setMicBlocked(true);
-          setVoiceNotice(err === 'audio-capture' ? 'No microphone found. Plug one in, or switch to steady auto-scroll.' : MIC_BLOCKED_NOTICE);
-        } else if (err === 'network') {
-          wordTrackingRef.current = false;
-          setVoiceNotice('Word tracking is offline right now, so the script follows the sound of your voice instead.');
-        } else {
-          wordTrackingRef.current = false;
-          setVoiceNotice('Word tracking paused for a moment. The script still follows the sound of your voice.');
-        }
+        // Restart at once so the first word after a pause is heard. If it
+        // keeps ending right after starting (offline, service refusing),
+        // wait a second between tries instead of looping.
+        quickEnds = performance.now() - startedAt < 1000 ? quickEnds + 1 : 0;
+        if (quickEnds >= 3) later(startRecognizer, 1000);
+        else startRecognizer();
       };
 
-      recognition.onend = () => {
-        if (isDisposed) return;
-        if (scrollModeRef.current === 'voice' && !isPausedRef.current) {
-          restartTimeoutRef.current = setTimeout(() => {
-            if (isDisposed || !recognition) return;
-            if (recognitionRef.current !== recognition) return;
-            if (scrollModeRef.current !== 'voice' || isPausedRef.current) return;
-            try {
-              recognition.start();
-              setIsListening(true);
-            } catch (e) {
-              console.warn('Recognition restart note:', e);
-            }
-          }, 300);
-        } else {
-          setIsListening(false);
-        }
-      };
+      recognition = r;
+      recognitionRef.current = r;
+      startedAt = performance.now();
+      speechWithoutWordsMs = 0;
+      longResultPending = false;
+      try {
+        r.start();
+        setIsListening(true);
+      } catch (e) {
+        console.warn('Recognition start note:', e);
+        later(startRecognizer, 250);
+      }
+    };
 
-      recognition.start();
-      setIsListening(true);
-      recognitionRef.current = recognition;
+    // Stop the current recognizer and start a fresh one as soon as the old
+    // one has let go of the microphone (or after 250 ms at most).
+    const replaceRecognizer = (reason: string) => {
+      const old = recognition;
+      if (!old || isDisposed || stopped) return;
+      console.warn(`Restarting speech recognition: ${reason}`);
+      recognition = null;
+      let started = false;
+      const startNew = () => {
+        if (started) return;
+        started = true;
+        startRecognizer();
+      };
+      old.onresult = null;
+      old.onerror = null;
+      old.onend = startNew;
+      try {
+        old.abort();
+      } catch (e) {
+        console.warn(e);
+      }
+      later(startNew, 250);
+    };
+
+    // Watchdog. isSpeakingRef comes from the microphone loudness meter.
+    const watchdog = setInterval(() => {
+      if (isDisposed || stopped || !recognition) return;
+      if (isSpeakingRef.current) speechWithoutWordsMs += WATCHDOG_MS;
+      if (speechWithoutWordsMs >= DEAF_AFTER_MS) {
+        replaceRecognizer(`no words during ${DEAF_AFTER_MS / 1000}s of speech`);
+      } else if (longResultPending && !isSpeakingRef.current) {
+        replaceRecognizer('long unfinished result, replaced at a pause');
+      }
+    }, WATCHDOG_MS);
+
+    try {
+      startRecognizer();
       // Words decide the position from the moment recognition runs. Loudness
       // scrolling is only the fallback when recognition is unavailable or
       // fails; letting it run until the first word arrives would push the
@@ -1039,10 +1125,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     return () => {
       isDisposed = true;
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current);
-        restartTimeoutRef.current = null;
-      }
+      clearInterval(watchdog);
+      timers.forEach(clearTimeout);
+      timers.clear();
       if (recognition) {
         try {
           recognition.abort();
@@ -1111,14 +1196,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
   };
 
-  const getSupportedMimeType = (): string => {
+  const getSupportedMimeType = (audioOnly: boolean): string => {
     if (typeof MediaRecorder === 'undefined') return '';
-    const types = [
-      'video/webm;codecs=vp9,opus',
-      'video/webm;codecs=vp8,opus',
-      'video/webm',
-      'video/mp4',
-    ];
+    const types = audioOnly
+      ? ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+      : ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
     for (const t of types) {
       if (MediaRecorder.isTypeSupported(t)) {
         return t;
@@ -1152,7 +1234,28 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       }
     }
 
-    if (stream && stream.getVideoTracks().length > 0) {
+    // Voice follow opens the microphone on its own, so the stream may have
+    // sound but no camera. Add the camera to it rather than record sound only.
+    const hasLiveVideo = (s: MediaStream | null) =>
+      !!s && s.getVideoTracks().some((t) => t.readyState === 'live');
+    if (stream && !hasLiveVideo(stream)) {
+      try {
+        const cam = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        });
+        stream = new MediaStream([...cam.getVideoTracks(), ...stream.getAudioTracks()]);
+        webcamStreamRef.current = stream;
+      } catch (e) {
+        console.warn('Could not add the camera for recording:', e);
+      }
+    }
+
+    const audioOnly = !hasLiveVideo(stream);
+    if (audioOnly) {
+      setCameraError('No camera available, so this take records sound only.');
+    }
+
+    if (stream && !audioOnly) {
       setUseLiveWebcam(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -1167,7 +1270,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     try {
       recordedChunksRef.current = [];
-      const mimeType = getSupportedMimeType();
+      const mimeType = getSupportedMimeType(audioOnly);
       const options = mimeType ? { mimeType } : undefined;
       const recorder = new MediaRecorder(stream, options);
 
@@ -1178,7 +1281,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       };
 
       recorder.onstop = () => {
-        const actualMime = recorder.mimeType || mimeType || 'video/webm';
+        const actualMime = recorder.mimeType || mimeType || (audioOnly ? 'audio/webm' : 'video/webm');
         const blob = new Blob(recordedChunksRef.current, { type: actualMime });
         const url = URL.createObjectURL(blob);
         takeCounterRef.current += 1;
@@ -1190,6 +1293,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           blob,
           url,
           mimeType: actualMime,
+          audioOnly,
           createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isDownloaded: false,
         };
@@ -1306,7 +1410,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   }, []);
 
   const handleDownloadTake = (take: PrompterTake) => {
-    const ext = take.mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const ext = take.mimeType.includes('mp4') ? (take.audioOnly ? 'm4a' : 'mp4') : take.audioOnly ? 'weba' : 'webm';
     const slug = (script.title || 'first-take-script')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -2125,6 +2229,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-ink">Take {take.takeNumber}</span>
+                        {take.audioOnly && (
+                          <span className="px-2 py-0.5 rounded bg-paper-raised border border-paper-line text-ink-soft font-label-meta text-[10px] font-bold">
+                            Sound only
+                          </span>
+                        )}
                         {take.isDownloaded ? (
                           <span className="px-2 py-0.5 rounded bg-forest-tint text-forest font-label-meta text-[10px] font-bold">
                             Saved
@@ -2144,7 +2253,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                       <button
                         onClick={() => setPreviewTake(take)}
                         className="p-2 rounded-lg bg-paper-raised hover:bg-white text-ink font-body-sm text-xs border border-paper-line cursor-pointer flex items-center gap-1 shadow-2xs"
-                        title="Preview video take"
+                        title={take.audioOnly ? 'Play this take (sound only)' : 'Play this take'}
                       >
                         <span className="material-symbols-outlined text-[16px]">play_arrow</span>
                         <span>Play</span>
@@ -2153,7 +2262,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                       <button
                         onClick={() => handleDownloadTake(take)}
                         className="p-2 rounded-lg bg-forest text-on-forest hover:bg-forest-dark font-body-sm text-xs cursor-pointer flex items-center gap-1 shadow-2xs"
-                        title="Download the video"
+                        title={take.audioOnly ? 'Download the sound recording' : 'Download the video'}
                       >
                         <span className="material-symbols-outlined text-[16px]">download</span>
                         <span>Save</span>
@@ -2197,7 +2306,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="font-bold text-ink">Take {previewTake.takeNumber}</span>
                 <span className="font-label-meta text-xs text-ink-soft">
-                  ({formatTime(previewTake.durationSec)})
+                  ({formatTime(previewTake.durationSec)}{previewTake.audioOnly ? ', sound only' : ''})
                 </span>
               </div>
               <button
@@ -2208,14 +2317,21 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               </button>
             </div>
 
-            <div className="w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
-              <video
-                src={previewTake.url}
-                controls
-                autoPlay
-                className="w-full h-full object-contain"
-              />
-            </div>
+            {previewTake.audioOnly ? (
+              <div className="w-full rounded-xl bg-paper-sunk border border-paper-line p-6 flex flex-col items-center gap-3">
+                <p className="font-body-sm text-sm text-ink-soft">No camera was available, so this take has sound only.</p>
+                <audio src={previewTake.url} controls autoPlay className="w-full" />
+              </div>
+            ) : (
+              <div className="w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
+                <video
+                  src={previewTake.url}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-2">
               <button
