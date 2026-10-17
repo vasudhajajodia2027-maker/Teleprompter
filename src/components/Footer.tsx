@@ -23,7 +23,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="flex items-center gap-3">
             <BrandLogo size="sm" showSubtitle={false} />
             <span className="font-label-meta text-xs text-ink-soft">
-              Speech-responsive teleprompter for founders
+              A teleprompter that follows your voice
             </span>
           </div>
 

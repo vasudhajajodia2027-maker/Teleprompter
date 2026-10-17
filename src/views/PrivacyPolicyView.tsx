@@ -23,7 +23,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
         </button>
 
         <span className="font-label-meta text-xs text-ink-faint">
-          Effective: 16 October 2026
+          Effective: 17 October 2026
         </span>
       </div>
 
@@ -80,7 +80,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              First Take Studio (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) provides a speech-responsive teleprompter application accessible via the web. It is made for founders, educators and creators who record talks and videos.
+              First Take Studio (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) provides a speech-responsive teleprompter application accessible via the web. It is made for creators, teachers and anyone who records talks and videos.
             </p>
             <p>
               For any questions regarding this policy or your personal data, you can reach our operator directly at{' '}
@@ -198,7 +198,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              Paid checkout is not currently live (we are currently operating in a waitlist phase). When payment functionality opens for the $19 one-time license, all transactions will be processed directly through Stripe, a PCI-DSS Level 1 certified payment processor.
+              Paid checkout is not currently live (we are currently operating in a waitlist phase). When payment functionality opens for the one-time license (early price ₹199 / $2), all transactions will be processed directly through Stripe, a PCI-DSS Level 1 certified payment processor.
             </p>
             <p>
               First Take Studio will never receive, store, or process your credit card numbers, CVV codes, or bank credentials. All financial information is handled entirely within Stripe&apos;s encrypted payment infrastructure.

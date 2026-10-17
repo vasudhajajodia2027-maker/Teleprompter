@@ -425,8 +425,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 </p>
               </div>
               <div className="flex items-baseline gap-1.5 shrink-0">
-                <span className="font-display text-4xl sm:text-5xl font-bold text-ink">$19</span>
-                <span className="font-label-meta text-xs text-ink-soft">, once</span>
+                <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
+                <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, once</span>
               </div>
             </div>
 
@@ -458,7 +458,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 onClick={handleBuy}
                 className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Join the waitlist ($19 at launch)</span>
+                <span>Join the waitlist (early price ₹199 / $2)</span>
                 <span className="material-symbols-outlined text-[18px]">bolt</span>
               </button>
               <p className="font-label-meta text-xs text-ink-soft">

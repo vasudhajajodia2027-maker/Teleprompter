@@ -102,7 +102,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             {/* Header copy */}
             <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-tint text-forest font-label-eyebrow text-xs uppercase tracking-widest font-bold">
-                ONE-TIME PURCHASE · $19
+                EARLY PRICE · ₹199 / $2
               </div>
               <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
                 Join the{' '}
@@ -122,16 +122,16 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                       First Take
                     </h2>
                     <span className="font-label-meta text-[10px] tracking-widest uppercase bg-forest-tint text-forest px-2.5 py-1 rounded font-bold border border-forest/20">
-                      ONE-TIME
+                      EARLY PRICE
                     </span>
                   </div>
                   <p className="font-body-sm text-sm text-ink-soft mt-1">
-                    $19 USD — once · no recurring charges
+                    Early price ₹199 / $2, paid once · no recurring charges
                   </p>
                 </div>
                 <div className="flex items-baseline gap-1 shrink-0">
-                  <span className="font-display text-4xl sm:text-5xl font-bold text-ink">$19</span>
-                  <span className="font-label-meta text-xs text-ink-soft">USD</span>
+                  <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
+                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, once</span>
                 </div>
               </div>
 
@@ -183,7 +183,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                       setEmail(e.target.value);
                       if (emailError) setEmailError('');
                     }}
-                    placeholder="founder@company.com"
+                    placeholder="you@example.com"
                     className="w-full h-12 px-4 rounded-lg bg-paper-sunk border border-paper-line text-ink font-body-sm text-base placeholder:text-ink-faint focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/20 transition-all"
                   />
                   {emailError && (
@@ -310,7 +310,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               <h2>Payment confirmed</h2>
               <p>You're all set</p>
               <div>YOUR PLAN: Full version — yours forever</div>
-              <div>First Take Studio — one-time purchase: $19.00 USD paid via Stripe</div>
+              <div>First Take Studio — one-time purchase: ₹199 / $2 paid via Stripe</div>
               <button>Open the teleprompter →</button>
               <button>Download receipt</button>
             </div>

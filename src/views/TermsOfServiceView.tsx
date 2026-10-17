@@ -23,7 +23,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
         </button>
 
         <span className="font-label-meta text-xs text-ink-faint">
-          Effective: 15 October 2026
+          Effective: 17 October 2026
         </span>
       </div>
 
@@ -59,7 +59,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>No recurring fees:</strong> There is a free demo now, and a $19 one-time license is planned.</span>
+            <span><strong>No recurring fees:</strong> There is a free demo now, and a one-time license at an early price of ₹199 / $2 is planned.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
@@ -94,7 +94,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
             SECTION 02
           </div>
           <h2 className="font-headline-md font-display text-2xl text-ink font-semibold">
-            The Free Demo &amp; Planned $19 One-Time Purchase
+            The Free Demo &amp; Planned One-Time Purchase
           </h2>
           <div className="font-body-sm text-ink-soft space-y-4 text-base leading-relaxed">
             <div>
@@ -108,10 +108,10 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
 
             <div className="pt-2 border-t border-paper-line/50">
               <h3 className="font-title-md font-semibold text-ink text-base mb-1">
-                B. The Planned $19 Lifetime License
+                B. The Planned Lifetime License
               </h3>
               <p>
-                We plan to offer a single, one-time lifetime license priced at $19 USD. This purchase grants permanent access to First Take Studio for personal and commercial content creation, including unlimited scripts, unlimited video takes, camera and microphone export, optical mirror mode, and all future updates with no recurring subscription fees.
+                We plan to offer a single, one-time lifetime license at an early price of ₹199 (in India) or US$2 (elsewhere). This purchase grants permanent access to First Take Studio for personal and commercial content creation, including unlimited scripts, unlimited video takes, camera and microphone export, optical mirror mode, and all future updates with no recurring subscription fees.
               </p>
             </div>
 
