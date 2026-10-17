@@ -212,7 +212,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
               To the maximum extent permitted by applicable law, in no event shall First Take Studio, its developers, or its affiliates be liable for any indirect, incidental, special, exemplary, consequential, or punitive damages, or for any loss of profits, revenue, data, goodwill, or recording takes arising out of or in connection with your use or inability to use the Service.
             </p>
             <p>
-              In all circumstances, our maximum aggregate liability to you for any claim arising out of these Terms or your use of the Service shall not exceed the amount actually paid by you to First Take Studio in the twelve (12) months preceding the event giving rise to liability (or $19 USD, whichever is greater).
+              In all circumstances, our maximum aggregate liability to you for any claim arising out of these Terms or your use of the Service shall not exceed the amount actually paid by you to First Take Studio in the twelve (12) months preceding the event giving rise to liability (or US$2, whichever is greater).
             </p>
           </div>
         </section>
