@@ -66,6 +66,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 w-full sm:w-auto">
             <button
+              id="hero-cta"
               onClick={() => onNavigate('prompter')}
               className="w-full sm:w-auto px-7 py-3.5 rounded-lg bg-forest text-on-forest font-title-md text-base hover:bg-forest-dark transition-all duration-150 text-center font-medium shadow-sm hover:shadow active:scale-98 cursor-pointer"
             >
