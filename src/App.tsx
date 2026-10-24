@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Script, LicenseStatus } from './types';
 import { DEFAULT_SCRIPTS } from './data/defaultScripts';
 import { nowStamp } from './lib/scriptTime';
@@ -383,28 +383,57 @@ export default function App() {
     return restored.length;
   };
 
+  // Delete is instant; for a few seconds "Undo" puts the script back where it
+  // was, here and in the account. A second delete makes the first one final.
+  const UNDO_MS = 8000;
+  const [undoDelete, setUndoDelete] = useState<{ script: Script; index: number } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearUndoTimer = () => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+  };
+  useEffect(() => clearUndoTimer, []);
+
   const handleDeleteScript = async (scriptId: string) => {
     if (scripts.length <= 1) {
       alert('You must keep at least one script in your editorial workspace.');
       return;
     }
-    if (confirm('Delete this script permanently? This action cannot be reversed.')) {
-      const remaining = scripts.filter((s) => s.id !== scriptId);
-      setScripts(remaining);
-      if (selectedScriptId === scriptId) {
-        setSelectedScriptId(remaining[0].id);
-      }
-      if (currentView === 'editor') {
-        handleNavigate('scripts');
-      }
-      if (user) {
-        try {
-          await supabase.from('scripts').delete().eq('id', scriptId).eq('user_id', user.id);
-        } catch (e) {
-          console.warn('Supabase delete script note:', e);
-        }
+    const index = scripts.findIndex((s) => s.id === scriptId);
+    if (index < 0) return;
+    const deleted = scripts[index];
+    const remaining = scripts.filter((s) => s.id !== scriptId);
+    setScripts(remaining);
+    if (selectedScriptId === scriptId) {
+      setSelectedScriptId(remaining[0].id);
+    }
+    if (currentView === 'editor') {
+      handleNavigate('scripts');
+    }
+    clearUndoTimer();
+    setUndoDelete({ script: deleted, index });
+    undoTimerRef.current = setTimeout(() => setUndoDelete(null), UNDO_MS);
+    if (user) {
+      try {
+        await supabase.from('scripts').delete().eq('id', scriptId).eq('user_id', user.id);
+      } catch (e) {
+        console.warn('Supabase delete script note:', e);
       }
     }
+  };
+
+  const handleUndoDelete = () => {
+    if (!undoDelete) return;
+    const { script, index } = undoDelete;
+    clearUndoTimer();
+    setUndoDelete(null);
+    setScripts((prev) => {
+      if (prev.some((s) => s.id === script.id)) return prev;
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, script);
+      return next;
+    });
+    persistScriptToCloud(script);
   };
 
   const handleImportScript = (title: string, content: string) => {
@@ -558,6 +587,21 @@ export default function App() {
                 />
               )}
             </main>
+
+            {undoDelete && (
+              <div
+                role="status"
+                className="fixed bottom-6 left-[calc(50%+128px)] -translate-x-1/2 z-50 flex items-center gap-4 pl-5 pr-2 py-2 rounded-xl bg-night-paper text-white shadow-2xl font-body-sm text-sm"
+              >
+                <span className="max-w-[320px] truncate">Deleted “{undoDelete.script.title}”</span>
+                <button
+                  onClick={handleUndoDelete}
+                  className="px-3 py-1.5 rounded-lg font-semibold text-marker hover:bg-white/10 cursor-pointer"
+                >
+                  Undo
+                </button>
+              </div>
+            )}
           </div>
         </>
       ) : (
