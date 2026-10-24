@@ -359,6 +359,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   // it. Measured, since the toolbar wraps onto two rows on narrow windows.
   const dockRef = useRef<HTMLDivElement>(null);
   const [scrollAreaHeight, setScrollAreaHeight] = useState<number | null>(null);
+  // The reading line sits high, just under the camera: 15% down the window,
+  // but never under the top bar. Stored as [line from window top, top bar height].
+  const [guideLayout, setGuideLayout] = useState<{ top: number; bar: number } | null>(null);
   useEffect(() => {
     const dock = dockRef.current;
     if (!dock || typeof ResizeObserver === 'undefined') return;
@@ -368,6 +371,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const measure = () => {
       const top = prompterContainerRef.current?.offsetTop ?? 0;
       setScrollAreaHeight(Math.max(200, window.innerHeight - top - dock.offsetHeight - 24 - 8));
+      const guideTop = Math.round(Math.max(window.innerHeight * 0.15, top + 16));
+      setGuideLayout((prev) => (prev && prev.top === guideTop && prev.bar === top ? prev : { top: guideTop, bar: top }));
     };
     const observer = new ResizeObserver(measure);
     observer.observe(dock);
@@ -384,12 +389,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   // script area (which starts below the top bar).
   const guideRef = useRef<HTMLDivElement>(null);
   const readingGuideY = () => {
-    const guide = guideRef.current?.getBoundingClientRect().top ?? window.innerHeight * 0.33;
+    const guide = guideRef.current?.getBoundingClientRect().top ?? window.innerHeight * 0.15;
     return guide - (prompterContainerRef.current?.getBoundingClientRect().top ?? 0);
   };
 
-  // The camera preview can be tucked away; while shown, the script keeps
-  // clear of it on the right.
+  // The live camera box can be tucked away into a pill; recording carries on.
   const [showCameraPreview, setShowCameraPreview] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const webcamStreamRef = useRef<MediaStream | null>(null);
@@ -1891,6 +1895,25 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             <p className="font-title-md text-xs font-medium max-w-[170px] truncate">{script.title}</p>
           </div>
 
+          {/* Phones have no room for a preview box; this pill shows and toggles the camera. */}
+          <button
+            onClick={toggleWebcam}
+            className={`sm:hidden flex items-center gap-1.5 px-2.5 h-8 rounded-lg border font-label-meta text-[11px] cursor-pointer transition-colors ${
+              useLiveWebcam
+                ? 'border-forest text-forest'
+                : isNightMode
+                ? 'border-[#3A3631] text-[#A39E92]'
+                : 'border-paper-line text-ink-soft'
+            }`}
+            title={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
+            aria-label={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : useLiveWebcam ? 'bg-forest' : 'bg-ink-faint'}`}></span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+              {useLiveWebcam ? 'videocam' : 'videocam_off'}
+            </span>
+          </button>
+
           <button
             onClick={() => setShowHelpModal(true)}
             className={`w-8 h-8 rounded-lg flex items-center justify-center border font-label-meta text-xs transition-colors cursor-pointer ${
@@ -1924,26 +1947,33 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       {/* LIVE CAMERA HUD PiP (Floating Top-Right)                      */}
       {/* ============================================================== */}
-      {!showCameraPreview && (
+      {/* Camera off: a small pill instead of an empty box. Camera on but hidden: a pill to bring it back. */}
+      {(!useLiveWebcam || !showCameraPreview) && (
         <button
-          onClick={() => setShowCameraPreview(true)}
-          className="fixed top-20 right-6 sm:right-12 z-40 px-3 py-1.5 rounded-full bg-night-paper text-white font-label-meta text-[11px] flex items-center gap-1.5 shadow-lg border border-forest cursor-pointer"
-          title="Show the camera preview"
+          onClick={() => (useLiveWebcam ? setShowCameraPreview(true) : toggleWebcam())}
+          className={`hidden sm:flex fixed top-20 right-6 lg:right-12 z-40 px-3 py-1.5 rounded-full font-label-meta text-[11px] items-center gap-1.5 shadow-sm border cursor-pointer transition-colors ${
+            isNightMode
+              ? 'bg-[#2A2724] border-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0]'
+              : 'bg-paper-raised border-paper-line text-ink-soft hover:text-ink'
+          }`}
+          title={useLiveWebcam ? 'Show the camera preview' : 'Turn on the camera'}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : 'bg-forest'}`}></span>
+          <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : useLiveWebcam ? 'bg-forest' : 'bg-ink-faint'}`}></span>
           <span aria-hidden="true" className="material-symbols-outlined text-[14px]">videocam</span>
-          <span>Show camera</span>
+          {/* Short label below lg so the pill fits inside the column's clearance. */}
+          <span className="lg:hidden">Camera</span>
+          <span className="hidden lg:inline">{useLiveWebcam ? 'Show camera' : 'Turn on camera'}</span>
         </button>
       )}
       <div
-        className={`fixed top-20 right-6 sm:right-12 z-40 w-[160px] sm:w-[200px] lg:w-[240px] aspect-video rounded-xl overflow-hidden bg-night-paper shadow-2xl border-2 border-forest group transition-all duration-200 ${
-          showCameraPreview ? '' : 'hidden'
+        className={`fixed top-20 right-6 lg:right-12 z-40 w-[128px] lg:w-[200px] aspect-video rounded-xl overflow-hidden bg-night-paper shadow-2xl border-2 border-forest group transition-all duration-200 ${
+          useLiveWebcam && showCameraPreview ? 'hidden sm:block' : 'hidden'
         }`}
       >
         <div className="relative w-full h-full">
           <button
             onClick={() => setShowCameraPreview(false)}
-            className="absolute top-8 right-2 w-6 h-6 rounded bg-night-paper/80 text-white hover:bg-night-paper flex items-center justify-center cursor-pointer border border-white/20 z-20"
+            className="absolute top-1.5 right-1.5 w-6 h-6 rounded bg-night-paper/80 text-white hover:bg-night-paper flex items-center justify-center cursor-pointer border border-white/20 z-20"
             title="Hide the camera preview (recording carries on)"
             aria-label="Hide the camera preview"
           >
@@ -1960,32 +1990,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             }`}
           />
 
-          {!useLiveWebcam && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 text-white/60">
-              <span aria-hidden="true" className="material-symbols-outlined text-[28px]">videocam_off</span>
-              <span className="font-label-meta text-[10px] uppercase tracking-wider">Camera off</span>
-            </div>
-          )}
-
           <div className="absolute inset-0 bg-gradient-to-t from-night-paper/85 via-transparent to-night-paper/40 pointer-events-none z-15"></div>
 
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white z-20">
+          <div className="absolute top-1.5 left-1.5 flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white z-20">
             <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : 'bg-forest'}`}></span>
             <span className="font-label-meta text-[9px] tracking-wider uppercase font-bold">
-              {useLiveWebcam ? 'WEBCAM' : 'PREVIEW'}
+              {isRecording ? 'REC' : 'LIVE'}
             </span>
           </div>
-
-          <button
-            onClick={toggleWebcam}
-            className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-night-paper/80 text-white font-label-meta text-[10px] hover:bg-night-paper transition-colors flex items-center gap-1 cursor-pointer border border-white/20 z-20"
-            title={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
-          >
-            <span aria-hidden="true" className="material-symbols-outlined text-[13px]">
-              {useLiveWebcam ? 'videocam_off' : 'videocam'}
-            </span>
-            <span>{useLiveWebcam ? 'Off' : 'Webcam'}</span>
-          </button>
 
           {/* 1. Real Audio Waveform Visualizer driven by live RMS volume */}
           <div className="absolute bottom-1.5 left-2 right-2 flex flex-col gap-0.5 px-1.5 py-1 bg-black/60 backdrop-blur-xs rounded-lg border border-white/10 z-20">
@@ -2026,15 +2038,23 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 {isSpeaking && (
                   <span className="w-1.5 h-1.5 rounded-full bg-forest animate-ping"></span>
                 )}
-                <span className="font-label-meta text-[9px] text-white/80 uppercase font-semibold">
+                <span className="hidden lg:inline font-label-meta text-[9px] text-white/80 uppercase font-semibold">
                   {micBlocked ? 'MIC BLOCKED' : isSpeaking ? 'SPEAKING' : isListening ? 'LISTENING' : 'MIC STANDBY'}
                 </span>
+                <button
+                  onClick={toggleWebcam}
+                  className="w-5 h-5 rounded flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 cursor-pointer"
+                  title="Turn off camera"
+                  aria-label="Turn off camera"
+                >
+                  <span aria-hidden="true" className="material-symbols-outlined text-[14px]">videocam_off</span>
+                </button>
               </div>
             </div>
 
             {/* 4. Live recognized words transcript ("Hearing: ...") */}
             {lastRecognizedPhrase && (
-              <div className="flex items-center gap-1 overflow-hidden pt-0.5 border-t border-white/10">
+              <div className="hidden lg:flex items-center gap-1 overflow-hidden pt-0.5 border-t border-white/10">
                 <span className="font-label-meta text-[8px] text-white/50 uppercase">HEARING:</span>
                 <p
                   className="font-label-meta text-[9px] text-marker font-semibold truncate max-w-[170px]"
@@ -2049,11 +2069,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       </div>
 
       {/* ============================================================== */}
-      {/* READING GUIDE LINE (FIXED AT 33% FROM TOP)                     */}
+      {/* READING GUIDE LINE (HIGH, JUST UNDER THE CAMERA)               */}
       {/* ============================================================== */}
       <div
         ref={guideRef}
-        style={{ top: '33vh' }}
+        style={{ top: guideLayout ? `${guideLayout.top}px` : '15vh' }}
         className="fixed left-0 right-0 z-20 pointer-events-none flex items-center justify-between px-4 sm:px-12"
       >
         <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-forest opacity-70">arrow_right</span>
@@ -2067,17 +2087,20 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         ref={prompterContainerRef}
         onScroll={updateActiveLineFromScroll}
         style={{ height: scrollAreaHeight ? `${scrollAreaHeight}px` : '100vh' }}
-        className={`overflow-y-auto overflow-x-hidden w-full relative px-6 flex justify-center focus:outline-none ${
-          showCameraPreview ? 'sm:pr-[248px] lg:pr-[312px]' : ''
-        }`}
+        className="overflow-y-auto overflow-x-hidden w-full relative px-6 flex justify-center focus:outline-none"
       >
+        {/* Centred under the camera. From 640px up the column stays within 60% of
+            the window and keeps the same distance clear on both sides as the
+            corner camera box takes (box + inset + 24px gap), so it never runs
+            under the preview and never reflows when the camera turns on or off. */}
         <div
           ref={scriptContentRef}
           style={{
             fontSize: `${fontSize}px`,
             transform: isMirrored ? 'scaleX(-1)' : 'none',
+            paddingTop: guideLayout ? `${guideLayout.top - guideLayout.bar}px` : '15vh',
           }}
-          className={`w-full min-w-0 max-w-[28ch] h-max pt-[33vh] pb-[60vh] flex flex-col gap-10 text-left tracking-tight leading-[1.45] [overflow-wrap:anywhere] hyphens-auto transition-transform duration-200 ${
+          className={`w-full min-w-0 max-w-[28ch] sm:max-w-[min(28ch,60vw,calc(100vw_-_352px))] lg:max-w-[min(28ch,60vw,calc(100vw_-_544px))] h-max pb-[60vh] flex flex-col gap-10 text-left tracking-tight leading-[1.45] [overflow-wrap:anywhere] hyphens-auto transition-transform duration-200 ${
             textStyle === 'serif' ? 'font-prompter-reading' : 'font-body-md'
           } ${textStyle === 'bold' ? '[&_*]:font-bold!' : ''}`}
         >
