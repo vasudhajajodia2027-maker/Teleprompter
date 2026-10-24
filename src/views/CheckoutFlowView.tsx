@@ -16,10 +16,16 @@ interface CheckoutFlowViewProps {
 
 type CheckoutStep = 'details' | 'confirmation' | 'paid';
 
-// Stripe sends the buyer back to /checkout?paid=1. The license is turned on
-// by the stripe-webhook function, usually within a few seconds.
-const returnedFromStripe = () =>
-  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paid') === '1';
+// Dodo sends the buyer back to /checkout?paid=1&payment_id=...&status=...
+// The license is turned on by the dodo-webhook function, usually within a
+// few seconds.
+const checkoutReturn = (): 'paid' | 'failed' | null => {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('paid') !== '1') return null;
+  const status = params.get('status');
+  return !status || status === 'succeeded' ? 'paid' : 'failed';
+};
 
 export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
   initialEmail = '',
@@ -31,8 +37,12 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
   onOpenScripts,
 }) => {
   const { signInWithGoogle } = useAuth();
-  const [step, setStep] = useState<CheckoutStep>(() => (PAYMENTS_ENABLED && returnedFromStripe() ? 'paid' : 'details'));
-  const [checkoutError, setCheckoutError] = useState('');
+  const [step, setStep] = useState<CheckoutStep>(() =>
+    PAYMENTS_ENABLED && checkoutReturn() === 'paid' ? 'paid' : 'details'
+  );
+  const [checkoutError, setCheckoutError] = useState(() =>
+    PAYMENTS_ENABLED && checkoutReturn() === 'failed' ? 'The payment did not go through. You have not been charged; please try again.' : ''
+  );
   const [activationTimedOut, setActivationTimedOut] = useState(false);
 
   // After payment, poll the license until the webhook has turned Pro on.
@@ -251,8 +261,8 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                       {checkoutError && <p className="text-xs text-rec font-medium text-center">{checkoutError}</p>}
                       <p className="text-center font-label-meta text-xs text-ink-soft leading-relaxed px-2">
                         {isSignedIn
-                          ? 'Paid once through Stripe. Your purchase is linked to the Google account you signed in with.'
-                          : 'Sign in so your purchase is linked to your account. Payment is handled by Stripe.'}
+                          ? 'Paid once through Dodo Payments. Your purchase is linked to the Google account you signed in with.'
+                          : 'Sign in so your purchase is linked to your account. Payment is handled by Dodo Payments.'}
                       </p>
                     </>
                   )}
@@ -392,7 +402,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
         )}
 
         {/* ============================================================== */}
-        {/* SCREEN 4 – BACK FROM STRIPE: PAYMENT CONFIRMED                 */}
+        {/* SCREEN 4 – BACK FROM DODO: PAYMENT CONFIRMED                   */}
         {/* ============================================================== */}
         {step === 'paid' && (
           <div className="w-full max-w-xl mx-auto space-y-8 animate-fadeIn text-center">

@@ -208,11 +208,11 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
               {PAYMENTS_ENABLED
-                ? 'Purchases of the one-time license (early price ₹199 / $2) are processed by Stripe, a PCI-DSS Level 1 certified payment processor. We receive your account id, email address, and a record of the payment so we can turn on your license and handle refunds.'
-                : 'Paid checkout is not currently live (we are currently operating in a waitlist phase). When payment functionality opens for the one-time license (early price ₹199 / $2), all transactions will be processed directly through Stripe, a PCI-DSS Level 1 certified payment processor.'}
+                ? 'Purchases of the one-time license (early price ₹199 / $2) are processed by Dodo Payments, which acts as merchant of record and handles payment, tax and invoicing. We receive your account id, email address, and a record of the payment (amount, currency and payment id) so we can turn on your license and handle refunds.'
+                : 'Paid checkout is not currently live (we are currently operating in a waitlist phase). When payment functionality opens for the one-time license (early price ₹199 / $2), all transactions will be processed by Dodo Payments, acting as merchant of record.'}
             </p>
             <p>
-              First Take will never receive, store, or process your credit card numbers, CVV codes, or bank credentials. All financial information is handled entirely within Stripe&apos;s encrypted payment infrastructure.
+              First Take will never receive, store, or process your credit card numbers, CVV codes, or bank credentials. All financial information is handled entirely by our payment provider, Dodo Payments.
             </p>
           </div>
         </section>
