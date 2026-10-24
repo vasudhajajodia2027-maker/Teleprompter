@@ -67,15 +67,15 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
       reader.readAsText(file);
       return;
     }
-    readScriptFile(file).then(
-      ({ title, text }) => onImportScript(title, text),
-      (err) =>
+    readScriptFile(file)
+      .then(({ title, text }) => onImportScript(title, text))
+      .catch((err) =>
         alert(
           err instanceof Error && err.message === UNSUPPORTED_FILE_MESSAGE
             ? 'Choose a Word (.docx), .txt or .md file, or a First Take backup (.json).'
-            : `Couldn’t read “${file.name}”.`
+            : `Couldn’t import “${file.name}”.`
         )
-    );
+      );
   };
 
   const handleDrop = (e: React.DragEvent) => {

@@ -360,7 +360,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const dockRef = useRef<HTMLDivElement>(null);
   const [scrollAreaHeight, setScrollAreaHeight] = useState<number | null>(null);
   // The reading line sits high, just under the camera: 15% down the window,
-  // but never under the top bar. Stored as [line from window top, top bar height].
+  // but never under the top bar. `top` is from the window top, `bar` is the top bar height.
+  const topBarRef = useRef<HTMLElement>(null);
   const [guideLayout, setGuideLayout] = useState<{ top: number; bar: number } | null>(null);
   useEffect(() => {
     const dock = dockRef.current;
@@ -377,6 +378,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const observer = new ResizeObserver(measure);
     observer.observe(dock);
     observer.observe(document.documentElement);
+    // The top bar wraps onto more rows as its chips change; re-place the reading line then.
+    if (topBarRef.current) observer.observe(topBarRef.current);
     window.addEventListener('resize', measure);
     measure();
     return () => {
@@ -1763,6 +1766,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* PROMPTER HUD / CONTROL HEADER                                  */}
       {/* ============================================================== */}
       <header
+        ref={topBarRef}
         className={`sticky top-0 z-30 flex items-center justify-between py-3 px-6 md:px-12 backdrop-blur-md border-b transition-colors duration-300 ${
           isNightMode
             ? 'bg-[#1F1D1A]/90 border-[#3A3631]'
@@ -1898,15 +1902,16 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           {/* Phones have no room for a preview box; this pill shows and toggles the camera. */}
           <button
             onClick={toggleWebcam}
-            className={`sm:hidden flex items-center gap-1.5 px-2.5 h-8 rounded-lg border font-label-meta text-[11px] cursor-pointer transition-colors ${
+            disabled={isRecording}
+            className={`sm:hidden flex items-center gap-1.5 px-2.5 h-8 rounded-lg border font-label-meta text-[11px] cursor-pointer disabled:cursor-default transition-colors ${
               useLiveWebcam
                 ? 'border-forest text-forest'
                 : isNightMode
                 ? 'border-[#3A3631] text-[#A39E92]'
                 : 'border-paper-line text-ink-soft'
             }`}
-            title={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
-            aria-label={useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
+            title={isRecording ? 'Camera can’t change during a take' : useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
+            aria-label={isRecording ? 'Camera can’t change during a take' : useLiveWebcam ? 'Turn off camera' : 'Turn on camera'}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${isRecording ? 'bg-rec animate-ping' : useLiveWebcam ? 'bg-forest' : 'bg-ink-faint'}`}></span>
             <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
@@ -1948,7 +1953,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* LIVE CAMERA HUD PiP (Floating Top-Right)                      */}
       {/* ============================================================== */}
       {/* Camera off: a small pill instead of an empty box. Camera on but hidden: a pill to bring it back. */}
-      {(!useLiveWebcam || !showCameraPreview) && (
+      {/* No "turn on" mid-take: a new stream would replace the one being recorded. */}
+      {((useLiveWebcam && !showCameraPreview) || (!useLiveWebcam && !isRecording)) && (
         <button
           onClick={() => (useLiveWebcam ? setShowCameraPreview(true) : toggleWebcam())}
           className={`hidden sm:flex fixed top-20 right-6 lg:right-12 z-40 px-3 py-1.5 rounded-full font-label-meta text-[11px] items-center gap-1.5 shadow-sm border cursor-pointer transition-colors ${
@@ -2041,14 +2047,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <span className="hidden lg:inline font-label-meta text-[9px] text-white/80 uppercase font-semibold">
                   {micBlocked ? 'MIC BLOCKED' : isSpeaking ? 'SPEAKING' : isListening ? 'LISTENING' : 'MIC STANDBY'}
                 </span>
-                <button
-                  onClick={toggleWebcam}
-                  className="w-5 h-5 rounded flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 cursor-pointer"
-                  title="Turn off camera"
-                  aria-label="Turn off camera"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-[14px]">videocam_off</span>
-                </button>
+                {/* Turning the camera off stops the stream the take records from, so not mid-take. */}
+                {!isRecording && (
+                  <button
+                    onClick={toggleWebcam}
+                    className="w-5 h-5 rounded flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 cursor-pointer"
+                    title="Turn off camera"
+                    aria-label="Turn off camera"
+                  >
+                    <span aria-hidden="true" className="material-symbols-outlined text-[14px]">videocam_off</span>
+                  </button>
+                )}
               </div>
             </div>
 
