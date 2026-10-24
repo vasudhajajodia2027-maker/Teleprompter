@@ -22,6 +22,37 @@ import { TermsOfServiceView } from './views/TermsOfServiceView';
 import { useAuth } from './context/AuthContext';
 import { supabase } from '../utils/supabase/client';
 
+const LICENSE_CACHE_KEY = 'ft_license_store';
+
+const FREE_LICENSE: LicenseStatus = {
+  isActive: false,
+  key: '',
+  plan: 'free',
+  seat: 'Solo Creator',
+};
+
+// Pro comes only from the signed-in user's row in the Supabase licenses table
+// (clients can read it but not write it). An error or a missing row is free.
+async function fetchServerLicense(userId: string): Promise<LicenseStatus | null> {
+  const { data: lic, error } = await supabase
+    .from('licenses')
+    .select('is_pro, activated_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.warn('Supabase license fetch note:', error.message);
+    return null;
+  }
+  if (!lic?.is_pro) return FREE_LICENSE;
+  return {
+    isActive: true,
+    key: 'PRO-CLOUD-ACTIVATED',
+    plan: 'lifetime',
+    seat: 'Solo Creator',
+    activatedAt: lic.activated_at ? new Date(lic.activated_at).toLocaleDateString() : 'Active',
+  };
+}
+
 export type AppView = 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
 
 function getInitialView(): AppView {
@@ -61,7 +92,7 @@ function getPathForView(view: AppView): string {
 }
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [currentView, setCurrentView] = useState<AppView>(getInitialView);
   const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter'>('scripts');
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
@@ -105,21 +136,20 @@ export default function App() {
     return DEFAULT_SCRIPTS;
   });
 
-  // Load license from localStorage or default
+  // localStorage only seeds what is displayed until the server answers; it
+  // never decides Pro. isPro is true only once the licenses row for the
+  // current user has been read from Supabase.
   const [license, setLicense] = useState<LicenseStatus>(() => {
     try {
-      const saved = localStorage.getItem('ft_license_store');
-      if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem(LICENSE_CACHE_KEY);
+      if (saved) return { ...FREE_LICENSE, ...JSON.parse(saved) };
     } catch (e) {
       console.error(e);
     }
-    return {
-      isActive: false,
-      key: '',
-      plan: 'free',
-      seat: 'Solo Creator',
-    };
+    return FREE_LICENSE;
   });
+  const [licenseVerifiedFor, setLicenseVerifiedFor] = useState<string | null>(null);
+  const isPro = !!user && licenseVerifiedFor === user.id && license.isActive;
 
   // Save scripts to localStorage as local-first fallback
   useEffect(() => {
@@ -130,14 +160,41 @@ export default function App() {
     }
   }, [scripts]);
 
-  // Save license to localStorage as local-first fallback
+  const refreshLicense = useCallback(async () => {
+    if (!user) return;
+    const serverLicense = await fetchServerLicense(user.id);
+    setLicense(serverLicense ?? FREE_LICENSE);
+    setLicenseVerifiedFor(serverLicense ? user.id : null);
+  }, [user]);
+
+  // Signed out is free. Signed in, the server value overwrites the cache.
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLicense(FREE_LICENSE);
+      setLicenseVerifiedFor(null);
+      return;
+    }
+    let isCancelled = false;
+    fetchServerLicense(user.id).then((serverLicense) => {
+      if (isCancelled) return;
+      setLicense(serverLicense ?? FREE_LICENSE);
+      setLicenseVerifiedFor(serverLicense ? user.id : null);
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, authLoading]);
+
+  // Display cache only: written after the server (or sign-out) sets the value.
+  useEffect(() => {
+    if (authLoading) return;
     try {
-      localStorage.setItem('ft_license_store', JSON.stringify(license));
+      localStorage.setItem(LICENSE_CACHE_KEY, JSON.stringify(license));
     } catch (e) {
       console.error(e);
     }
-  }, [license]);
+  }, [license, authLoading]);
 
   // Synchronize directly with Supabase when user is authenticated
   useEffect(() => {
@@ -188,29 +245,6 @@ export default function App() {
               estimated_read_time: s.estimatedReadTime,
               updated_at: s.updatedAt,
             });
-          });
-        }
-      });
-
-    // Fetch user license from Supabase
-    supabase
-      .from('licenses')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(({ data: lic, error }) => {
-        if (isCancelled) return;
-        if (error) {
-          console.warn('Supabase license fetch note:', error.message);
-          return;
-        }
-        if (lic && lic.is_pro) {
-          setLicense({
-            isActive: true,
-            key: 'PRO-CLOUD-ACTIVATED',
-            plan: 'lifetime',
-            seat: 'Solo Creator',
-            activatedAt: lic.activated_at ? new Date(lic.activated_at).toLocaleDateString() : 'Active',
           });
         }
       });
@@ -403,39 +437,10 @@ export default function App() {
     a.click();
   };
 
-  const handleActivateKey = (key: string): boolean => {
-    if (key.length >= 6) {
-      setLicense({
-        isActive: true,
-        key,
-        plan: 'lifetime',
-        seat: 'Solo Creator',
-        activatedAt: new Date().toLocaleDateString(),
-      });
-      return true;
-    }
-    return false;
-  };
-
-  const handleDeactivateKey = () => {
-    if (confirm('Deactivate First Take Pro on this computer?')) {
-      setLicense({
-        isActive: false,
-        key: '',
-        plan: 'free',
-        seat: 'Solo Creator',
-      });
-    }
-  };
-
+  // A purchase is granted server-side; re-read the license rather than
+  // trusting the client.
   const handlePurchaseComplete = (_email: string) => {
-    setLicense({
-      isActive: true,
-      key: 'LIFETIME-ACCESS',
-      plan: 'lifetime',
-      seat: 'Solo Creator',
-      activatedAt: new Date().toLocaleDateString(),
-    });
+    refreshLicense();
   };
 
   const handleNavigate = (view: AppView) => {
@@ -471,7 +476,7 @@ export default function App() {
       <LivePrompterView
         script={activeScript}
         onExit={() => handleNavigate(prompterReturnView)}
-        isPro={license.isActive}
+        isPro={isPro}
       />
     );
   }
@@ -546,7 +551,7 @@ export default function App() {
           <Header
             currentView={currentView}
             onNavigate={handleNavigate}
-            isPro={license.isActive}
+            isPro={isPro}
           />
           <main className="w-full pt-16 bg-paper min-h-screen flex-1">
             {currentView === 'privacy' ? (
@@ -557,7 +562,6 @@ export default function App() {
               <PricingView
                 license={license}
                 onStartCheckout={() => handleNavigate('checkout')}
-                onDeactivateKey={handleDeactivateKey}
                 onOpenSandbox={() => handleNavigate('scripts')}
               />
             ) : (

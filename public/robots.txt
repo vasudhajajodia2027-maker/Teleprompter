@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /editor
+Disallow: /prompter
+Disallow: /scripts
+
+Sitemap: https://getfirsttake.app/sitemap.xml

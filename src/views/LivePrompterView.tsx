@@ -190,6 +190,12 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
   );
 });
 
+// Checked once, before anything is recorded. Without a recognizer (Firefox,
+// Safari on some systems) voice follow can't track words, so the prompter
+// starts in fixed-speed auto-scroll and says which browsers can.
+const SPEECH_RECOGNITION_SUPPORTED =
+  typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
 // Speech recognition watchdog: checked every WATCHDOG_MS. A recognizer that
 // returns no words during DEAF_AFTER_MS of detected speech is replaced, and so
 // is one whose unfinished result reaches LONG_RESULT_WORDS (at the next pause)
@@ -279,6 +285,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   });
 
   const [scrollMode, setScrollMode] = useState<'voice' | 'auto'>(() => {
+    if (!SPEECH_RECOGNITION_SUPPORTED) return 'auto';
     try {
       const saved = localStorage.getItem('ft_prompter_mode');
       if (saved === 'voice' || saved === 'auto') return saved;
@@ -316,6 +323,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+  const [showUnsupportedBanner, setShowUnsupportedBanner] = useState<boolean>(!SPEECH_RECOGNITION_SUPPORTED);
   const [micBlocked, setMicBlocked] = useState<boolean>(false);
   const [lastRecognizedPhrase, setLastRecognizedPhrase] = useState<string>('');
   const [micVisualLevels, setMicVisualLevels] = useState<number[]>([0.1, 0.1, 0.1, 0.1, 0.1]);
@@ -956,7 +964,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
       wordTrackingRef.current = false;
-      setVoiceNotice('This browser can’t recognize words, so the script follows the sound of your voice instead. Chrome or Edge track words best.');
+      setShowUnsupportedBanner(true);
+      setScrollMode('auto');
       return;
     }
 
@@ -1509,7 +1518,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         setIsMirrored((prev) => !prev);
       } else if (e.code === 'KeyV') {
         e.preventDefault();
-        setScrollMode((prev) => (prev === 'voice' ? 'auto' : 'voice'));
+        if (SPEECH_RECOGNITION_SUPPORTED) setScrollMode((prev) => (prev === 'voice' ? 'auto' : 'voice'));
       } else if (e.code === 'ArrowUp' && scrollModeRef.current === 'auto') {
         e.preventDefault();
         setBaseWpm((prev) => Math.min(220, prev + 5));
@@ -1624,6 +1633,27 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         </div>
       )}
 
+      {/* NO SPEECH RECOGNITION IN THIS BROWSER */}
+      {showUnsupportedBanner && !cameraError && !voiceNotice && (
+        <div role="status" className="fixed top-18 left-1/2 -translate-x-1/2 z-45 max-w-xl w-full px-4">
+          <div className="p-3.5 rounded-xl bg-marker/95 text-ink border border-marker-border shadow-md flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-tertiary">info</span>
+              <span>
+                This browser can’t follow your voice, so the script scrolls at a fixed speed (↑/↓ to adjust).
+                For voice follow, open First Take in Google Chrome or Microsoft Edge.
+              </span>
+            </div>
+            <button aria-label="Dismiss"
+              onClick={() => setShowUnsupportedBanner(false)}
+              className="text-ink/60 hover:text-ink cursor-pointer p-1 shrink-0"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* TOP NOTICES */}
       {(cameraError || voiceNotice) && (
         <div className="fixed top-18 left-1/2 -translate-x-1/2 z-45 max-w-xl w-full px-4">
@@ -1706,7 +1736,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           </button>
 
           {/* Auto-scroll is a fallback only; offer the way back to voice follow */}
-          {scrollMode === 'auto' && (
+          {scrollMode === 'auto' && SPEECH_RECOGNITION_SUPPORTED && (
             <button
               onClick={() => {
                 setMicBlocked(false);
