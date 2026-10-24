@@ -359,16 +359,18 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
         {/* The script */}
         <div className="bg-paper-raised rounded-xl border border-paper-line shadow-xs">
           <div className="p-6 sm:p-10">
-            {writing ? (
-              <textarea
-                ref={editorRef}
-                value={content}
-                onChange={handleContentChange}
-                className="w-full min-h-[360px] overflow-hidden bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading"
-                placeholder="Type or paste your script here"
-                spellCheck="true"
-              />
-            ) : paragraphs.length === 0 ? (
+            {/* Hidden, not removed, in Preview: removing it would wipe the browser's Ctrl+Z history. */}
+            <textarea
+              ref={editorRef}
+              value={content}
+              onChange={handleContentChange}
+              className={`w-full min-h-[360px] overflow-hidden bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading ${
+                writing ? '' : 'hidden'
+              }`}
+              placeholder="Type or paste your script here"
+              spellCheck="true"
+            />
+            {writing ? null : paragraphs.length === 0 ? (
               <p className="min-h-[360px] font-body-sm text-sm text-ink-faint">Nothing to preview yet. Switch to Write and add your script.</p>
             ) : (
               <div className="min-h-[360px] space-y-6 font-prompter-reading text-lg sm:text-xl text-ink leading-[1.8]">
