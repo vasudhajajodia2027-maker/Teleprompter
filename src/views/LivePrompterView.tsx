@@ -1870,10 +1870,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-label-meta ${
               isNightMode ? 'bg-[#2A2724] border-[#3A3631] text-[#FAF7F0]' : 'bg-paper-raised border-paper-line text-ink'
             }`}
+            title="Estimated reading time left at your current pace, and how much of the script you've read"
           >
-            <span>{remainingSeconds > 0 ? `${formatTime(remainingSeconds)} left` : 'Finished'}</span>
-            <span className="text-ink-faint">•</span>
-            <span className="text-ink-soft">{progressPercent}%</span>
+            {remainingSeconds > 0 ? (
+              <>
+                <span>About {formatTime(remainingSeconds)} to go</span>
+                <span className="text-ink-faint">·</span>
+                <span className="text-ink-soft">{progressPercent}% read</span>
+              </>
+            ) : (
+              <span>Finished</span>
+            )}
           </div>
         </div>
 
