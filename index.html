@@ -23,13 +23,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-    <!-- Microsoft Clarity -->
+    <!-- Microsoft Clarity: loaded only after the visitor accepts analytics
+         (src/components/ConsentBanner.tsx). -->
     <script type="text/javascript">
-      (function (c, l, a, r, i, t, y) {
-        c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
-        t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
-        y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-      })(window, document, 'clarity', 'script', 'z2mq2h619n');
+      window.ftLoadClarity = function () {
+        if (window.ftClarityLoaded) return;
+        window.ftClarityLoaded = true;
+        (function (c, l, a, r, i, t, y) {
+          c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+          t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
+          y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, 'clarity', 'script', 'z2mq2h619n');
+        window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
+      };
+      try {
+        if (localStorage.getItem('ft_analytics_consent') === 'granted') window.ftLoadClarity();
+      } catch (e) {}
     </script>
   </head>
   <body class="bg-[#FAF7F0] text-[#1F1D1A] antialiased">

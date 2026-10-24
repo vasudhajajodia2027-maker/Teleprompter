@@ -11,6 +11,7 @@ import { formatStoredReadTime, readSeconds, spokenWordCount } from './lib/script
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
+import { ConsentBanner } from './components/ConsentBanner';
 import { LandingPage } from './views/LandingPage';
 import { MyScriptsView } from './views/MyScriptsView';
 import { ScriptEditorView } from './views/ScriptEditorView';
@@ -575,6 +576,7 @@ export default function App() {
           <Footer onNavigate={handleNavigate} />
         </div>
       )}
+      <ConsentBanner />
     </div>
   );
 }

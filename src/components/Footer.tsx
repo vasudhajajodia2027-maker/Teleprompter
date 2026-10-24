@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrandLogo } from './BrandLogo';
+import { OPEN_CONSENT_EVENT } from './ConsentBanner';
 
 interface FooterProps {
   onNavigate?: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
@@ -47,6 +48,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
             >
               Keyboard shortcuts
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT_EVENT))}
+              className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
+            >
+              Cookie settings
             </button>
           </div>
 

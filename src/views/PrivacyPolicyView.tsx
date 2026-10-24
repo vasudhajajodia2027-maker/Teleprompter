@@ -67,7 +67,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>Site analytics:</strong> We use Microsoft Clarity to see how visitors use the site, such as clicks and scrolling. Your scripts are hidden from it.</span>
+            <span><strong>Site analytics, only if you agree:</strong> With your permission, we use Microsoft Clarity to see how visitors use the site, such as clicks and scrolling. Your scripts are hidden from it.</span>
           </li>
         </ul>
       </div>
@@ -172,7 +172,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               </li>
               <li>
                 <strong className="text-ink">Microsoft Clarity:</strong> Helps us understand how the site is used and fix problems. It records mouse movements, clicks, scrolling and the pages you visit, and can replay a visit as a session recording. It uses cookies and collects device and browser details and an approximate location. The script editor, script library and prompter are masked, so the text of your scripts is never captured, and text you type into form fields is masked by default. Microsoft processes this data under the{' '}
-                <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener noreferrer" className="text-forest font-medium underline hover:text-forest-dark">Microsoft Privacy Statement</a>. To opt out, block cookies for clarity.ms or use a tracker-blocking browser extension.
+                <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener noreferrer" className="text-forest font-medium underline hover:text-forest-dark">Microsoft Privacy Statement</a>. Clarity runs only if you click Accept on the cookie banner. You can change your choice at any time with Cookie settings at the bottom of the page.
               </li>
             </ul>
             <p>
