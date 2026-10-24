@@ -383,6 +383,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const webcamStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  // Set by "Restart take" so the take being thrown away isn't saved.
+  const discardTakeRef = useRef<boolean>(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const restartTimeoutRef = useRef<any>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -1329,6 +1331,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       };
 
       recorder.onstop = () => {
+        if (discardTakeRef.current) {
+          discardTakeRef.current = false;
+          recordedChunksRef.current = [];
+          return;
+        }
         const actualMime = recorder.mimeType || mimeType || (audioOnly ? 'audio/webm' : 'video/webm');
         const blob = new Blob(recordedChunksRef.current, { type: actualMime });
         const url = URL.createObjectURL(blob);
@@ -1413,6 +1420,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         startRecordingStream();
       });
     }
+  };
+
+  // Throw away the take in progress and record a fresh one from the first line.
+  const handleRestartTake = () => {
+    if (!isRecording) return;
+    discardTakeRef.current = true;
+    stopRecordingStream();
+    handleRestartFromTop();
+    runCountdown(() => {
+      handleRestartFromTop();
+      setSessionStarted(true);
+      startRecordingStream();
+    });
   };
 
   useEffect(() => {
@@ -1504,9 +1524,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       if (e.code === 'Space') {
         e.preventDefault();
         handleStartPause();
-      } else if (e.code === 'Home' && !isRecording) {
+      } else if (e.code === 'Home' && isRecording) {
         e.preventDefault();
-        handleRestartFromTop();
+        handleRestartTake();
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         handleToggleRecord();
@@ -2128,17 +2148,21 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <span>{isPaused ? (canResume ? 'Resume' : 'Start') : 'Pause'}</span>
             </button>
 
-            <button
-              onClick={handleRestartFromTop}
-              disabled={isRecording}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
-                isNightMode ? 'hover:bg-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0]' : 'hover:bg-paper-sunk text-ink-soft hover:text-ink'
-              }`}
-              title="Start over from the first line (Home)"
-              aria-label="Start over from the first line"
-            >
-              <span aria-hidden="true" className="material-symbols-outlined text-[22px]">restart_alt</span>
-            </button>
+            {isRecording && (
+              <button
+                onClick={handleRestartTake}
+                className={`flex items-center gap-1.5 px-3 h-11 rounded-xl transition-colors font-body-sm text-sm cursor-pointer border ${
+                  isNightMode
+                    ? 'border-[#3A3631] hover:bg-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0]'
+                    : 'border-paper-line hover:bg-paper-sunk text-ink-soft hover:text-ink'
+                }`}
+                title="Restart take: discard this recording and start again from the first line (Home)"
+                aria-label="Restart take: discard this recording and start again from the first line"
+              >
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">restart_alt</span>
+                <span>Restart</span>
+              </button>
+            )}
           </div>
 
           {/* 2. Speed controls exist only for the auto-scroll fallback */}
@@ -2499,7 +2523,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Space</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Start over from the first line</span>
+                <span className="text-ink-soft">Restart take (while recording)</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Home</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
