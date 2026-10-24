@@ -71,12 +71,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             >
               Try it free
             </button>
-            <a
-              href="#demo-workstation"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-lg bg-paper-raised text-ink font-title-md text-base hover:bg-paper-sunk transition-colors duration-150 text-center font-medium border border-paper-line cursor-pointer"
-            >
-              See how it works
-            </a>
           </div>
 
           {/* Subtext under hero button - says 'nothing is uploaded' once */}
