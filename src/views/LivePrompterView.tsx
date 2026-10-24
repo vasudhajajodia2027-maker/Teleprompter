@@ -1607,7 +1607,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   );
 
   return (
+    // Scripts never reach Clarity session replays.
     <div
+      data-clarity-mask="true"
       className={`min-h-screen w-full relative select-none transition-colors duration-300 font-body-sm ${
         isNightMode ? 'bg-[#1F1D1A] text-[#FAF7F0]' : 'bg-[#FAF7F0] text-[#1F1D1A]'
       }`}

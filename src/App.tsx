@@ -500,7 +500,8 @@ export default function App() {
             }}
           />
 
-          <div className="pl-64 min-h-screen flex flex-col">
+          {/* Scripts never reach Clarity session replays. */}
+          <div className="pl-64 min-h-screen flex flex-col" data-clarity-mask="true">
             {/* Top Workspace Header */}
             <header className="fixed top-0 left-64 right-0 h-16 bg-paper shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-paper-line/50 z-40 flex items-center justify-between px-8">
               <div className="flex items-center gap-3">

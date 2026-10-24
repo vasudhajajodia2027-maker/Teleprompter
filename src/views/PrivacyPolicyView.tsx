@@ -23,7 +23,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
         </button>
 
         <span className="font-label-meta text-xs text-ink-faint">
-          Effective: 17 October 2026
+          Effective: 24 October 2026
         </span>
       </div>
 
@@ -64,6 +64,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
             <span><strong>No ad tracking or data selling:</strong> We never sell your personal information or use your data for targeted advertising.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-forest font-bold">•</span>
+            <span><strong>Site analytics:</strong> We use Microsoft Clarity to see how visitors use the site, such as clicks and scrolling. Your scripts are hidden from it.</span>
           </li>
         </ul>
       </div>
@@ -166,6 +170,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               <li>
                 <strong className="text-ink">Your browser&apos;s speech service:</strong> When voice follow is on, browsers such as Google Chrome send microphone audio to their own speech service to recognize words. We do not receive this audio.
               </li>
+              <li>
+                <strong className="text-ink">Microsoft Clarity:</strong> Helps us understand how the site is used and fix problems. It records mouse movements, clicks, scrolling and the pages you visit, and can replay a visit as a session recording. It uses cookies and collects device and browser details and an approximate location. The script editor, script library and prompter are masked, so the text of your scripts is never captured, and text you type into form fields is masked by default. Microsoft processes this data under the{' '}
+                <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener noreferrer" className="text-forest font-medium underline hover:text-forest-dark">Microsoft Privacy Statement</a>. To opt out, block cookies for clarity.ms or use a tracker-blocking browser extension.
+              </li>
             </ul>
             <p>
               These providers process data only as needed to deliver their services.
@@ -183,7 +191,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
           </h2>
           <div className="font-body-sm text-ink-soft space-y-3 text-base leading-relaxed">
             <p>
-              We do not sell, rent, license, or monetize your personal information to third parties. We do not use your scripts, recordings, email address, or identity for advertising, audience profiling, or behavioral tracking.
+              We do not sell, rent, license, or monetize your personal information to third parties. We do not use your scripts, recordings, email address, or identity for advertising or audience profiling. The only usage analytics we collect are the Microsoft Clarity data described in Section 03, used solely to improve First Take.
             </p>
           </div>
         </section>
