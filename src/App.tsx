@@ -388,6 +388,8 @@ export default function App() {
   const UNDO_MS = 8000;
   const [undoDelete, setUndoDelete] = useState<{ script: Script; index: number } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The account delete still in flight, so Undo re-saves only after it lands.
+  const pendingCloudDeleteRef = useRef<Promise<unknown>>(Promise.resolve());
   const clearUndoTimer = () => {
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     undoTimerRef.current = null;
@@ -414,11 +416,15 @@ export default function App() {
     setUndoDelete({ script: deleted, index });
     undoTimerRef.current = setTimeout(() => setUndoDelete(null), UNDO_MS);
     if (user) {
-      try {
-        await supabase.from('scripts').delete().eq('id', scriptId).eq('user_id', user.id);
-      } catch (e) {
-        console.warn('Supabase delete script note:', e);
-      }
+      const cloudDelete = (async () => {
+        try {
+          await supabase.from('scripts').delete().eq('id', scriptId).eq('user_id', user.id);
+        } catch (e) {
+          console.warn('Supabase delete script note:', e);
+        }
+      })();
+      pendingCloudDeleteRef.current = cloudDelete;
+      await cloudDelete;
     }
   };
 
@@ -433,7 +439,7 @@ export default function App() {
       next.splice(Math.min(index, next.length), 0, script);
       return next;
     });
-    persistScriptToCloud(script);
+    pendingCloudDeleteRef.current.then(() => persistScriptToCloud(script));
   };
 
   const handleImportScript = (title: string, content: string) => {

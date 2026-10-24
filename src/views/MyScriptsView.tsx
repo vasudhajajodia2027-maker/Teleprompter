@@ -88,15 +88,17 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
     'w-9 h-9 rounded-lg bg-paper-sunk hover:bg-paper-line text-ink-soft hover:text-ink flex items-center justify-center transition-colors cursor-pointer';
 
   return (
+    // Fills the content area so a file dropped anywhere below the cards still lands here.
     <div
-      className="flex flex-col w-full relative"
+      className="flex flex-col w-full relative min-h-[calc(100vh-5rem)]"
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
         setIsDragging(true);
       }}
       onDragLeave={(e) => {
-        if (e.currentTarget === e.target) setIsDragging(false);
+        // Leaving for a child element is still on the page; leaving the page is not.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIsDragging(false);
       }}
       onDrop={handleDrop}
     >
