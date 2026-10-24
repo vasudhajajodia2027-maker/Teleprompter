@@ -284,6 +284,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     return false;
   });
 
+  // Whether Start also records a take, or just runs the prompter.
+  const [recordTake, setRecordTake] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('ft_prompter_record_take');
+      if (saved !== null) return saved === 'true';
+    } catch (e) {
+      console.warn(e);
+    }
+    return true;
+  });
+
   const [scrollMode, setScrollMode] = useState<'voice' | 'auto'>(() => {
     if (!SPEECH_RECOGNITION_SUPPORTED) return 'auto';
     try {
@@ -449,10 +460,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       localStorage.setItem('ft_prompter_mirrored', isMirrored.toString());
       localStorage.setItem('ft_prompter_mode', scrollMode);
       localStorage.setItem('ft_prompter_speech_lang', speechLang);
+      localStorage.setItem('ft_prompter_record_take', recordTake.toString());
     } catch (e) {
       console.warn('Failed to save prompter settings:', e);
     }
-  }, [fontSize, baseWpm, speedLevel, isNightMode, isMirrored, scrollMode, speechLang]);
+  }, [fontSize, baseWpm, speedLevel, isNightMode, isMirrored, scrollMode, speechLang, recordTake]);
 
   // Synchronize webcam element source
   useEffect(() => {
@@ -926,11 +938,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
   // Pause stops at once. Start counts down 3-2-1 and begins at the first line;
   // after a Pause mid-script the same button reads "Resume" and counts down
-  // back into the line where the speaker stopped.
-  const canResume = sessionStarted && currentWordIndex > 0 && currentWordIndex < tokenizedWords.length - 1;
+  // back into the line where the speaker stopped. With "Record take" on and no
+  // take running, Start records a new take from the first line instead.
+  const startsTake = recordTake && !isRecording;
+  const canResume = !startsTake && sessionStarted && currentWordIndex > 0 && currentWordIndex < tokenizedWords.length - 1;
   const handleStartPause = () => {
     if (!isPaused) {
       setIsPaused(true);
+      return;
+    }
+    if (startsTake) {
+      handleToggleRecord();
       return;
     }
     const resume = canResume;
@@ -1412,6 +1430,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   const handleToggleRecord = () => {
     if (isRecording) {
       stopRecordingStream();
+      // The take is over: the next Start begins a new one from the first line.
+      setSessionStarted(false);
     } else {
       runCountdown(() => {
         // Every take starts from the first line of the script.
@@ -1746,17 +1766,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       >
         {/* Left: Recording, Mode Toggle, Language Selector & Status Chip */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Record button indicator */}
-          <button
-            onClick={handleToggleRecord}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer shadow-xs ${
+          {/* Recording status (Start and Stop live in the bottom dock) */}
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all shadow-xs ${
               isRecording
                 ? 'bg-rec-tint text-rec border border-rec/30'
                 : isNightMode
-                ? 'bg-[#2A2724] text-[#A39E92] hover:text-[#FAF7F0] border border-[#3A3631]'
-                : 'bg-paper-raised text-ink-soft hover:text-ink border border-paper-line'
+                ? 'bg-[#2A2724] text-[#A39E92] border border-[#3A3631]'
+                : 'bg-paper-raised text-ink-soft border border-paper-line'
             }`}
-            title={isRecording ? 'Stop take (R)' : 'Start recording (R)'}
           >
             <span
               className={`w-2 h-2 rounded-full ${
@@ -1766,7 +1784,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             <span className="font-label-meta text-xs tracking-wider font-bold">
               {isRecording ? `REC ${formatTime(elapsedSeconds)}` : 'READY'}
             </span>
-          </button>
+          </div>
 
           {/* Auto-scroll is a fallback only; offer the way back to voice follow */}
           {scrollMode === 'auto' && SPEECH_RECOGNITION_SUPPORTED && (
@@ -2125,24 +2143,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               : 'bg-paper-raised/95 border-paper-line text-ink'
           }`}
         >
-          {/* 1. Record & Play/Pause Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleRecord}
-              className={`flex items-center gap-1.5 px-4 h-11 rounded-xl transition-all active:scale-95 shadow-xs cursor-pointer font-body-sm text-sm font-semibold ${
-                isRecording
-                  ? 'bg-rec hover:bg-rec/90 text-white animate-pulse'
-                  : 'bg-rec hover:bg-rec/90 text-white'
-              }`}
-              title={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
-              aria-label={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
-            >
-              <span aria-hidden="true" className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                {isRecording ? 'stop' : 'fiber_manual_record'}
-              </span>
-              <span>{isRecording ? 'Stop' : 'Record'}</span>
-            </button>
-
+          {/* 1. Start/Pause, Restart, Stop, and whether Start records */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleStartPause}
               className={`flex items-center gap-1.5 px-4 h-11 rounded-xl transition-colors font-body-sm text-sm cursor-pointer border ${
@@ -2177,6 +2179,45 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               >
                 <span aria-hidden="true" className="material-symbols-outlined text-[20px]">restart_alt</span>
                 <span>Restart</span>
+              </button>
+            )}
+
+            {isRecording && (
+              <button
+                onClick={handleToggleRecord}
+                className="flex items-center gap-1.5 px-4 h-11 rounded-xl transition-all active:scale-95 shadow-xs cursor-pointer font-body-sm text-sm font-semibold bg-rec hover:bg-rec/90 text-white"
+                title="Stop recording and keep this take (R)"
+                aria-label="Stop recording and keep this take"
+              >
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>stop</span>
+                <span>Stop</span>
+              </button>
+            )}
+
+            {!isRecording && isPaused && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={recordTake}
+                onClick={() => setRecordTake((v) => !v)}
+                className={`flex items-center gap-2 px-3 h-11 rounded-xl transition-colors font-body-sm text-sm cursor-pointer ${
+                  isNightMode ? 'text-[#A39E92] hover:text-[#FAF7F0]' : 'text-ink-soft hover:text-ink'
+                }`}
+                title={recordTake ? 'Start will record a take. Click to just run the prompter.' : 'Start will just run the prompter. Click to record a take too.'}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`relative inline-block w-9 h-5 rounded-full transition-colors ${
+                    recordTake ? 'bg-rec' : isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
+                      recordTake ? 'translate-x-4' : ''
+                    }`}
+                  ></span>
+                </span>
+                <span>Record take</span>
               </button>
             )}
           </div>
@@ -2543,7 +2584,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Home</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Start 3-2-1 / Stop Take</span>
+                <span className="text-ink-soft">Record a take / Stop</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">R</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
