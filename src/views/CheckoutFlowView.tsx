@@ -1,24 +1,73 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrandLogo } from '../components/BrandLogo';
 import { supabase } from '../../utils/supabase/client';
+import { useAuth } from '../context/AuthContext';
+import { PAYMENTS_ENABLED, RESUME_CHECKOUT_KEY, startCheckout } from '../lib/payments';
 
 interface CheckoutFlowViewProps {
   initialEmail?: string;
+  isSignedIn: boolean;
+  isPro: boolean;
+  onRefreshLicense: () => Promise<boolean>;
   onExit: () => void;
-  onCompletePurchase?: (email: string) => void;
   onOpenPrompter: () => void;
   onOpenScripts: () => void;
 }
 
-type CheckoutStep = 'details' | 'confirmation';
+type CheckoutStep = 'details' | 'confirmation' | 'paid';
+
+// Stripe sends the buyer back to /checkout?paid=1. The license is turned on
+// by the stripe-webhook function, usually within a few seconds.
+const returnedFromStripe = () =>
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paid') === '1';
 
 export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
   initialEmail = '',
+  isSignedIn,
+  isPro,
+  onRefreshLicense,
   onExit,
   onOpenPrompter,
   onOpenScripts,
 }) => {
-  const [step, setStep] = useState<CheckoutStep>('details');
+  const { signInWithGoogle } = useAuth();
+  const [step, setStep] = useState<CheckoutStep>(() => (PAYMENTS_ENABLED && returnedFromStripe() ? 'paid' : 'details'));
+  const [checkoutError, setCheckoutError] = useState('');
+  const [activationTimedOut, setActivationTimedOut] = useState(false);
+
+  // After payment, poll the license until the webhook has turned Pro on.
+  useEffect(() => {
+    if (step !== 'paid' || !isSignedIn || isPro) return;
+    let cancelled = false;
+    let tries = 0;
+    const poll = async () => {
+      if (cancelled) return;
+      if (await onRefreshLicense()) return;
+      tries += 1;
+      if (tries >= 15) setActivationTimedOut(true);
+      else setTimeout(poll, 2000);
+    };
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, isSignedIn, isPro, onRefreshLicense]);
+
+  const handleBuy = async () => {
+    setCheckoutError('');
+    if (!isSignedIn) {
+      try {
+        sessionStorage.setItem(RESUME_CHECKOUT_KEY, '1');
+      } catch (e) {
+        console.warn(e);
+      }
+      await signInWithGoogle();
+      return;
+    }
+    setIsSubmitting(true);
+    setCheckoutError(await startCheckout());
+    setIsSubmitting(false);
+  };
   const [email, setEmail] = useState(initialEmail);
   const [emailError, setEmailError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,7 +155,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 EARLY PRICE · ₹199 / $2
               </div>
               <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
-                Reserve the{' '}
+                {PAYMENTS_ENABLED ? 'Get the' : 'Reserve the'}{' '}
                 <mark className="bg-marker text-on-marker px-2.5 py-0.5 rounded-none font-normal italic inline-block">
                   early price
                 </mark>
@@ -169,7 +218,47 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 </ul>
               </div>
 
-              {/* Email Form */}
+              {PAYMENTS_ENABLED ? (
+                <div className="pt-4 border-t border-paper-line space-y-3">
+                  {isPro ? (
+                    <>
+                      <p className="font-body-sm text-sm text-ink text-center">You already own First Take on this account.</p>
+                      <button
+                        onClick={onOpenPrompter}
+                        className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer"
+                      >
+                        Open the teleprompter →
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleBuy}
+                        disabled={isSubmitting}
+                        className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Opening secure checkout...</span>
+                          </>
+                        ) : isSignedIn ? (
+                          <span>Buy for ₹199 / $2 →</span>
+                        ) : (
+                          <span>Sign in with Google to buy →</span>
+                        )}
+                      </button>
+                      {checkoutError && <p className="text-xs text-rec font-medium text-center">{checkoutError}</p>}
+                      <p className="text-center font-label-meta text-xs text-ink-soft leading-relaxed px-2">
+                        {isSignedIn
+                          ? 'Paid once through Stripe. Your purchase is linked to the Google account you signed in with.'
+                          : 'Sign in so your purchase is linked to your account. Payment is handled by Stripe.'}
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : (
+              /* Email Form */
               <form onSubmit={handleDetailsSubmit} className="pt-4 border-t border-paper-line space-y-4">
                 <div className="space-y-1.5">
                   <label htmlFor="customer-email" className="font-title-md text-sm font-semibold text-ink block">
@@ -216,6 +305,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   </p>
                 </div>
               </form>
+              )}
             </div>
 
             {/* Trust Row */}
@@ -302,19 +392,37 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
         )}
 
         {/* ============================================================== */}
-        {/* UNREACHABLE CODE: PAYMENT CONFIRMED / RECEIPT SCREEN           */}
-        {/* (Preserved per instructions: kept in code, unreachable)        */}
+        {/* SCREEN 4 – BACK FROM STRIPE: PAYMENT CONFIRMED                 */}
         {/* ============================================================== */}
-        {false && (
-          <div className="hidden" aria-hidden="true">
-            <div className="receipt-unreachable-archive">
-              <h2>Payment confirmed</h2>
-              <p>You're all set</p>
-              <div>YOUR PLAN: Full version — yours forever</div>
-              <div>First Take — one-time purchase: ₹199 / $2 paid via Stripe</div>
-              <button>Open the teleprompter →</button>
-              <button>Download receipt</button>
+        {step === 'paid' && (
+          <div className="w-full max-w-xl mx-auto space-y-8 animate-fadeIn text-center">
+            <div className="space-y-3">
+              <div className="w-16 h-16 rounded-full bg-forest-tint text-forest mx-auto flex items-center justify-center shadow-xs">
+                <span aria-hidden="true" className="material-symbols-outlined text-[36px]">
+                  {isPro ? 'check_circle' : 'hourglass_top'}
+                </span>
+              </div>
+              <h1 className="font-headline-lg text-4xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
+                {isPro ? "You're all set" : 'Payment received'}
+              </h1>
+              <p className="font-lead text-base sm:text-lg text-ink-soft max-w-md mx-auto leading-relaxed">
+                {isPro
+                  ? 'First Take is yours to keep, with every future update.'
+                  : !isSignedIn
+                  ? 'Sign in with the Google account you bought with to finish.'
+                  : activationTimedOut
+                  ? 'Your payment went through, but activation is taking longer than usual. Refresh this page in a minute, or email support@firsttakestudio.com.'
+                  : 'Activating your license. This takes a few seconds...'}
+              </p>
             </div>
+            {isPro && (
+              <button
+                onClick={onOpenPrompter}
+                className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer"
+              >
+                Open the teleprompter →
+              </button>
+            )}
           </div>
         )}
       </main>

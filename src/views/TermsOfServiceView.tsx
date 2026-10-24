@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { PAYMENTS_ENABLED } from '../lib/payments';
 
 interface TermsOfServiceViewProps {
   onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
@@ -59,7 +60,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>No recurring fees:</strong> There is a free demo now, and a one-time license at an early price of ₹199 / $2 is planned.</span>
+            <span><strong>No recurring fees:</strong> {PAYMENTS_ENABLED ? 'There is a free demo, and a one-time license at an early price of ₹199 / $2.' : 'There is a free demo now, and a one-time license at an early price of ₹199 / $2 is planned.'}</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
@@ -129,7 +130,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
                 D. 14-Day Money-Back Guarantee
               </h3>
               <p>
-                Once one-time purchases open, every license purchase comes with a 14-day money-back guarantee. If First Take does not fit your speaking workflow for any reason within 14 days of your purchase date, email us at{' '}
+                {PAYMENTS_ENABLED ? 'Every' : 'Once one-time purchases open, every'} license purchase comes with a 14-day money-back guarantee. If First Take does not fit your speaking workflow for any reason within 14 days of your purchase date, email us at{' '}
                 <a
                   href="mailto:support@firsttakestudio.com"
                   className="text-forest font-medium underline hover:text-forest-dark"

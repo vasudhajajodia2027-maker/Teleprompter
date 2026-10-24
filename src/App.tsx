@@ -22,6 +22,7 @@ import { PrivacyPolicyView } from './views/PrivacyPolicyView';
 import { TermsOfServiceView } from './views/TermsOfServiceView';
 import { useAuth } from './context/AuthContext';
 import { supabase } from '../utils/supabase/client';
+import { RESUME_CHECKOUT_KEY } from './lib/payments';
 
 const LICENSE_CACHE_KEY = 'ft_license_store';
 
@@ -161,11 +162,13 @@ export default function App() {
     }
   }, [scripts]);
 
-  const refreshLicense = useCallback(async () => {
-    if (!user) return;
+  // Re-reads the license from Supabase; resolves true when the user is Pro.
+  const refreshLicense = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
     const serverLicense = await fetchServerLicense(user.id);
     setLicense(serverLicense ?? FREE_LICENSE);
     setLicenseVerifiedFor(serverLicense ? user.id : null);
+    return !!serverLicense?.isActive;
   }, [user]);
 
   // Signed out is free. Signed in, the server value overwrites the cache.
@@ -438,11 +441,19 @@ export default function App() {
     a.click();
   };
 
-  // A purchase is granted server-side; re-read the license rather than
-  // trusting the client.
-  const handlePurchaseComplete = (_email: string) => {
-    refreshLicense();
-  };
+
+  // Back from the Google sign-in started on the checkout page.
+  useEffect(() => {
+    if (!user) return;
+    try {
+      if (sessionStorage.getItem(RESUME_CHECKOUT_KEY)) {
+        sessionStorage.removeItem(RESUME_CHECKOUT_KEY);
+        handleNavigate('checkout');
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [user]);
 
   const handleNavigate = (view: AppView) => {
     setCurrentView(view);
@@ -463,8 +474,10 @@ export default function App() {
     return (
       <CheckoutFlowView
         initialEmail={user?.email || ''}
+        isSignedIn={!!user}
+        isPro={isPro}
+        onRefreshLicense={refreshLicense}
         onExit={() => handleNavigate('overview')}
-        onCompletePurchase={handlePurchaseComplete}
         onOpenPrompter={() => handleOpenPrompter(activeScript.id)}
         onOpenScripts={() => handleNavigate('scripts')}
       />

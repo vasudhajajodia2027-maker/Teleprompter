@@ -1,4 +1,5 @@
 import React from 'react';
+import { PAYMENTS_ENABLED } from '../lib/payments';
 import { LicenseStatus } from '../types';
 
 interface PricingViewProps {
@@ -33,7 +34,9 @@ export const PricingView: React.FC<PricingViewProps> = ({
             </h1>
 
             <p className="font-lead text-base sm:text-xl text-ink-soft max-w-[620px] mx-auto leading-relaxed">
-              Pay once and keep it. No subscription. Buying opens soon: reserve the early price now, with nothing to pay today.
+              {PAYMENTS_ENABLED
+                ? 'Pay once and keep it. No subscription. Early price ₹199 / $2.'
+                : 'Pay once and keep it. No subscription. Buying opens soon: reserve the early price now, with nothing to pay today.'}
             </p>
           </div>
 
@@ -99,7 +102,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                   onClick={onStartCheckout}
                   className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all duration-150 shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{license.isActive ? 'Active: yours to keep' : 'Reserve the early price'}</span>
+                  <span>{license.isActive ? 'Active: yours to keep' : PAYMENTS_ENABLED ? 'Buy First Take' : 'Reserve the early price'}</span>
                   <span aria-hidden="true" className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <p className="font-label-meta text-xs text-ink-soft">
