@@ -85,7 +85,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">R</kbd>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-ink-soft">Restart take (while recording)</span>
+                <span className="text-ink-soft">Restart from the first line</span>
                 <kbd className="px-2 py-1 rounded bg-paper-sunk font-label-meta text-xs font-semibold text-ink border border-paper-line">Home</kbd>
               </div>
               <div className="flex items-center justify-between">

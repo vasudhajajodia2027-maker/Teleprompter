@@ -1422,9 +1422,20 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
   };
 
-  // Throw away the take in progress and record a fresh one from the first line.
+  // Go back to the first line and run again after a 3-2-1. While recording,
+  // the take in progress is thrown away and a fresh one is recorded.
   const handleRestartTake = () => {
-    if (!isRecording) return;
+    if (!isRecording) {
+      if (!sessionStarted) return;
+      setIsPaused(true);
+      handleRestartFromTop();
+      runCountdown(() => {
+        handleRestartFromTop();
+        setSessionStarted(true);
+        setIsPaused(false);
+      });
+      return;
+    }
     discardTakeRef.current = true;
     stopRecordingStream();
     handleRestartFromTop();
@@ -1524,7 +1535,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       if (e.code === 'Space') {
         e.preventDefault();
         handleStartPause();
-      } else if (e.code === 'Home' && isRecording) {
+      } else if (e.code === 'Home' && (isRecording || sessionStarted)) {
         e.preventDefault();
         handleRestartTake();
       } else if (e.code === 'KeyR') {
@@ -2148,7 +2159,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               <span>{isPaused ? (canResume ? 'Resume' : 'Start') : 'Pause'}</span>
             </button>
 
-            {isRecording && (
+            {(isRecording || sessionStarted) && (
               <button
                 onClick={handleRestartTake}
                 className={`flex items-center gap-1.5 px-3 h-11 rounded-xl transition-colors font-body-sm text-sm cursor-pointer border ${
@@ -2156,8 +2167,12 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                     ? 'border-[#3A3631] hover:bg-[#3A3631] text-[#A39E92] hover:text-[#FAF7F0]'
                     : 'border-paper-line hover:bg-paper-sunk text-ink-soft hover:text-ink'
                 }`}
-                title="Restart take: discard this recording and start again from the first line (Home)"
-                aria-label="Restart take: discard this recording and start again from the first line"
+                title={isRecording
+                  ? 'Restart: discard this recording and start again from the first line (Home)'
+                  : 'Restart: go back to the first line and start again (Home)'}
+                aria-label={isRecording
+                  ? 'Restart: discard this recording and start again from the first line'
+                  : 'Restart: go back to the first line and start again'}
               >
                 <span aria-hidden="true" className="material-symbols-outlined text-[20px]">restart_alt</span>
                 <span>Restart</span>
@@ -2523,7 +2538,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Space</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
-                <span className="text-ink-soft">Restart take (while recording)</span>
+                <span className="text-ink-soft">Restart from the first line</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Home</kbd>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-paper-line/50">
