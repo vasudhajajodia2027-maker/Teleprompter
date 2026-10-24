@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { searchScripts, sortScripts, splitTemplates } from './scriptLibrary';
+import { copyTitle, searchScripts, sortScripts, splitTemplates } from './scriptLibrary';
+
+describe('copyTitle', () => {
+  it('adds "(copy)" to the first copy', () => {
+    expect(copyTitle('Launch day', ['Launch day'])).toBe('Launch day (copy)');
+  });
+
+  it('numbers further copies instead of stacking', () => {
+    expect(copyTitle('Launch day', ['Launch day', 'Launch day (copy)'])).toBe('Launch day (copy 2)');
+    expect(copyTitle('Launch day (copy)', ['Launch day', 'Launch day (copy)', 'Launch day (copy 2)'])).toBe(
+      'Launch day (copy 3)'
+    );
+  });
+
+  it('cleans up old "Copy of" names', () => {
+    expect(copyTitle('Copy of Copy of Launch day', ['Copy of Copy of Launch day'])).toBe('Launch day (copy)');
+  });
+
+  it('matches existing copies regardless of case', () => {
+    expect(copyTitle('Launch day', ['launch day (COPY)'])).toBe('Launch day (copy 2)');
+  });
+});
 import { Script } from '../types';
 
 const script = (over: Partial<Script>): Script => ({
