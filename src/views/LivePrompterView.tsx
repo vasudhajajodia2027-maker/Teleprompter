@@ -2612,7 +2612,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       {showHelpModal && (
         <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-paper-raised rounded-2xl max-w-md w-full p-6 sm:p-8 border border-paper-line shadow-2xl text-ink space-y-5 animate-scaleIn">
+          <div className="bg-paper-raised rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 border border-paper-line shadow-2xl text-ink space-y-5 animate-scaleIn">
             <div className="flex items-center justify-between pb-3 border-b border-paper-line">
               <div className="flex items-center gap-2">
                 <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px]">keyboard</span>
@@ -2663,6 +2663,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <span className="text-ink-soft">Leave the prompter</span>
                 <kbd className="px-2 py-0.5 rounded bg-paper-sunk font-label-meta text-xs font-bold border border-paper-line">Esc</kbd>
               </div>
+            </div>
+
+            <div className="space-y-2 pt-4 border-t border-paper-line font-body-sm text-sm leading-relaxed">
+              <h4 className="font-title-md text-sm font-semibold text-ink">Voice follow tips</h4>
+              <p className="text-ink-soft">
+                <strong className="text-ink">Microphone.</strong> Use Chrome or Edge and allow the microphone when asked. Keep it 6–10 inches from your mouth; a quiet room works best.
+              </p>
+              <p className="text-ink-soft">
+                <strong className="text-ink">Notes in brackets.</strong> Write <code className="font-label-meta text-xs bg-paper-sunk px-1 py-0.5 rounded">[PAUSE 2s]</code> or <code className="font-label-meta text-xs bg-paper-sunk px-1 py-0.5 rounded">[CAMERA LOOK]</code> as reminders. They stay on screen, you don't read them aloud, and the script skips them.
+              </p>
+              <p className="text-ink-soft">
+                <strong className="text-ink">Eye line.</strong> The line you read sits near the top, centred under your camera. Keep this window right below the camera so your eyes stay close to the lens.
+              </p>
             </div>
 
             <div className="pt-2 text-right">
