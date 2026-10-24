@@ -7,6 +7,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMe
 import { Script } from '../types';
 import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, describeWords } from '../lib/voiceMatch';
 import { createVoiceActivityDetector } from '../lib/voiceActivity';
+import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -306,15 +307,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     return 'voice';
   });
 
-  // Language / accent selector with English (India) en-IN as DEFAULT
+  // The language voice follow listens for: the saved choice, else the browser's.
   const [speechLang, setSpeechLang] = useState<string>(() => {
+    let saved: string | null = null;
     try {
-      const saved = localStorage.getItem('ft_prompter_speech_lang');
-      if (saved) return saved;
+      saved = localStorage.getItem('ft_prompter_speech_lang');
     } catch (e) {
       console.warn(e);
     }
-    return 'en-IN';
+    return defaultSpeechLang(saved, typeof navigator !== 'undefined' ? navigator.languages ?? [] : []);
   });
 
   // 2. Playback & Prompter state
@@ -1805,26 +1806,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             </button>
           )}
 
-          {/* 3. Language / Accent Selector with en-IN as DEFAULT */}
-          {scrollMode === 'voice' && (
-            <select
-              value={speechLang}
-              onChange={(e) => setSpeechLang(e.target.value)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-label-meta border cursor-pointer outline-none transition-colors shadow-2xs ${
-                isNightMode
-                  ? 'bg-[#2A2724] border-[#3A3631] text-[#FAF7F0]'
-                  : 'bg-paper-raised border-paper-line text-ink'
-              }`}
-              title="The language you'll speak"
-            >
-              <option value="en-IN">English (India) · en-IN</option>
-              <option value="en-US">English (US) · en-US</option>
-              <option value="en-GB">English (UK) · en-GB</option>
-              <option value="hi-IN">Hindi · hi-IN</option>
-            </select>
-          )}
-
-          {/* 4. Live Voice Status Chip: Listening / Speaking / Paused (silence) */}
+          {/* 3. Live Voice Status Chip: Listening / Speaking / Paused (silence) */}
           {scrollMode === 'voice' && (
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-label-meta font-bold uppercase tracking-wider border transition-colors ${
@@ -2270,7 +2252,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
           <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
 
-          {/* 3. Display Adjustments: Font Sizing, Night Mode, Mirroring */}
+          {/* 3. Display Adjustments: Font Sizing, Text Style, Speech Language, Night Mode, Mirroring */}
           <div className="flex items-center gap-1.5">
             <div
               className={`flex items-center rounded-xl p-0.5 border ${
@@ -2340,6 +2322,37 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 expand_more
               </span>
             </label>
+
+            {scrollMode === 'voice' && (
+              <label className="relative flex items-center" title="The language you'll speak">
+                <span className="sr-only">Speech language</span>
+                <select
+                  value={speechLang}
+                  onChange={(e) => {
+                    setSpeechLang(e.target.value);
+                    e.currentTarget.blur();
+                  }}
+                  className={`h-9 pl-3 pr-8 rounded-xl border text-sm font-medium appearance-none cursor-pointer outline-none transition-colors ${
+                    isNightMode
+                      ? 'bg-[#3A3631] border-transparent text-[#FAF7F0]'
+                      : 'bg-paper-sunk border-paper-line/60 text-ink hover:bg-paper-raised'
+                  }`}
+                >
+                  {SPEECH_LANGS.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  className={`material-symbols-outlined text-[18px] absolute right-2 pointer-events-none ${
+                    isNightMode ? 'text-[#A39E92]' : 'text-ink-soft'
+                  }`}
+                >
+                  expand_more
+                </span>
+              </label>
+            )}
 
             <button
               onClick={() => setIsNightMode(!isNightMode)}
