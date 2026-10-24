@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { pauseSeconds, readSeconds, spokenWordCount, stripMarkdown } from './scriptText';
+import { pauseSeconds, previewText, readSeconds, spokenWordCount, stripMarkdown } from './scriptText';
+
+describe('previewText', () => {
+  it('drops [notes] and stress marks, with no ellipsis when nothing was cut', () => {
+    expect(previewText('Hi [PAUSE 2s] there **now**', 100)).toBe('Hi there now');
+  });
+
+  it('cuts long text at a word boundary and ends it with an ellipsis', () => {
+    const long = 'word '.repeat(60).trim(); // 299 characters
+    const preview = previewText(long, 160);
+    expect(preview.endsWith('…')).toBe(true);
+    expect(preview.length).toBeLessThanOrEqual(161);
+    expect(preview.slice(0, -1).endsWith('word')).toBe(true);
+  });
+
+  it('joins lines into one line of text', () => {
+    expect(previewText('First line.\n\n*Second* line.', 100)).toBe('First line. Second line.');
+  });
+});
 
 describe('stripMarkdown', () => {
   it('removes headings, bullets, quotes, rules and code marks', () => {

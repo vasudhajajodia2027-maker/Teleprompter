@@ -26,6 +26,20 @@ export function stripMarkdown(text: string): string {
     .trim();
 }
 
+// A one-line preview of what is read aloud: no [notes], no *stress* marks.
+// Cut at a word boundary, with "…" only when something was cut.
+export function previewText(text: string, maxChars: number): string {
+  const clean = text
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\*+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (clean.length <= maxChars) return clean;
+  const cut = clean.slice(0, maxChars + 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : clean.slice(0, maxChars)).trimEnd()}…`;
+}
+
 // Words that are read aloud: not inside [notes], and containing at least one
 // letter or digit (so "#", "—" and "-" don't count).
 export function spokenWordCount(text: string): number {
