@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { nowStamp } from '../lib/scriptTime';
 import { formatStoredReadTime, readSeconds, spokenWordCount } from '../lib/scriptText';
 import { readScriptFile, UNSUPPORTED_FILE_MESSAGE } from '../lib/scriptImport';
+import { previewParagraphs } from '../lib/scriptPreview';
 import { Script } from '../types';
 
 interface ScriptEditorViewProps {
   script: Script;
+  signedIn: boolean;
   onUpdateScript: (updated: Script) => void;
   onOpenPrompter: (scriptId: string) => void;
   onDuplicateScript: (scriptId: string) => void;
@@ -13,8 +15,11 @@ interface ScriptEditorViewProps {
   onBackToScripts: () => void;
 }
 
+const NOTES_HINT_KEY = 'ft_editor_notes_hint_dismissed';
+
 export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   script,
+  signedIn,
   onUpdateScript,
   onOpenPrompter,
   onDuplicateScript,
@@ -24,8 +29,14 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const [title, setTitle] = useState(script.title);
   const [content, setContent] = useState(script.content);
   const [pacingWpm, setPacingWpm] = useState(script.pacingWpm || 150);
-  const [saveStatus, setSaveStatus] = useState('Saved just now');
-  const [showProTip, setShowProTip] = useState(true);
+  const [mode, setMode] = useState<'write' | 'preview'>('write');
+  const [showNotesHint, setShowNotesHint] = useState(() => {
+    try {
+      return localStorage.getItem(NOTES_HINT_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  });
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,24 +53,30 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     setPacingWpm(script.pacingWpm || 150);
   }, [script.id]);
 
-  const triggerUpdate = (newTitle: string, newContent: string, newWpm: number) => {
-    setSaveStatus('Saving…');
-    const updatedWords = spokenWordCount(newContent);
-    const estTime = formatStoredReadTime(readSeconds(newContent, newWpm));
+  // The script box grows with its text, so the page scrolls rather than the box.
+  const fitEditorHeight = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+  useLayoutEffect(fitEditorHeight, [content, mode]);
+  useEffect(() => {
+    window.addEventListener('resize', fitEditorHeight);
+    return () => window.removeEventListener('resize', fitEditorHeight);
+  }, []);
 
+  // Every change is saved at once: in this browser, and to the account when signed in.
+  const triggerUpdate = (newTitle: string, newContent: string, newWpm: number) => {
     onUpdateScript({
       ...script,
       title: newTitle.trim() || 'Untitled',
       content: newContent,
       pacingWpm: newWpm,
-      wordCount: updatedWords,
-      estimatedReadTime: estTime,
+      wordCount: spokenWordCount(newContent),
+      estimatedReadTime: formatStoredReadTime(readSeconds(newContent, newWpm)),
       updatedAt: nowStamp(),
     });
-
-    setTimeout(() => {
-      setSaveStatus('Saved just now');
-    }, 400);
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +94,15 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const handlePaceChange = (val: number) => {
     setPacingWpm(val);
     triggerUpdate(title, content, val);
+  };
+
+  const dismissNotesHint = () => {
+    setShowNotesHint(false);
+    try {
+      localStorage.setItem(NOTES_HINT_KEY, 'true');
+    } catch {
+      // Private mode: the hint just comes back next time.
+    }
   };
 
   // Replace characters [from, to) of the script, then select [selectFrom,
@@ -189,222 +215,193 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const writing = mode === 'write';
+  const toolButton =
+    'px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-paper-sunk';
+  const barButton =
+    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-ink-soft hover:text-ink hover:bg-paper-sunk font-body-sm text-xs transition-colors cursor-pointer';
+  const paragraphs = writing ? [] : previewParagraphs(content);
+
   return (
     <div className="flex flex-col w-full pb-16">
-      <div className="max-w-[1120px] mx-auto w-full pt-4 space-y-6">
-        {/* Top Bar Navigation & Actions */}
-        <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-paper-line/60">
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onBackToScripts}
-                className="text-ink-soft hover:text-ink flex items-center gap-1 font-label-meta text-xs cursor-pointer mr-1"
-                title="Back to scripts"
-              >
-                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
-                <span>Scripts</span>
-              </button>
-              <span className="text-paper-line-strong">/</span>
-              <span className="font-label-eyebrow text-xs text-ink-soft uppercase tracking-wider">
-                {script.episodeTag || 'Episode 14 · Script'}
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-tint text-forest font-label-meta text-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-forest"></span>
-                Draft Ready
-              </span>
-            </div>
-
-            <div className="flex items-baseline gap-3">
-              <input
-                aria-label="Script title"
-                className="font-headline-md text-2xl sm:text-3xl text-ink bg-transparent focus:outline-none focus:bg-paper-sunk/60 rounded px-1 -ml-1 transition-colors w-full max-w-2xl font-medium tracking-tight font-display"
-                value={title}
-                onChange={handleTitleChange}
-                onBlur={() => {
-                  if (!title.trim()) setTitle('Untitled');
-                }}
-                placeholder="Untitled"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 mt-0.5">
-              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-forest">check_circle</span>
-              <p className="font-label-meta text-xs text-ink-soft">{saveStatus}</p>
-            </div>
-          </div>
-
-          {/* Primary Control Action */}
-          <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
+      <div className="max-w-[1120px] mx-auto w-full pt-4 space-y-5">
+        {/* Header: title, save status, Open prompter */}
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
             <button
-              onClick={() => alert(`${words} words at ${pacingWpm} words per minute takes about ${formattedReadTime} to read.`)}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-paper-raised text-ink font-body-sm text-sm hover:bg-paper-sunk transition-colors border border-paper-line cursor-pointer"
-              type="button"
+              onClick={onBackToScripts}
+              className="self-start text-ink-soft hover:text-ink flex items-center gap-1 font-label-meta text-xs cursor-pointer"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">speed</span>
-              <span>Pace Guide</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">arrow_back</span>
+              <span>My Scripts</span>
             </button>
-            <button
-              onClick={() => onOpenPrompter(script.id)}
-              className="flex items-center gap-2.5 px-5 py-2.5 rounded-lg bg-forest text-on-forest font-body-sm text-sm hover:bg-forest-dark transition-all transform active:scale-95 shadow-xs cursor-pointer font-medium"
-              type="button"
-            >
-              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">play_arrow</span>
-              <span className="tracking-wide">Open Prompter</span>
-            </button>
+            <input
+              aria-label="Script title"
+              className="font-headline-md text-2xl sm:text-3xl text-ink bg-transparent focus:outline-none focus:bg-paper-sunk/60 rounded px-1 -ml-1 transition-colors w-full font-medium tracking-tight font-display"
+              value={title}
+              onChange={handleTitleChange}
+              onBlur={() => {
+                if (!title.trim()) setTitle('Untitled');
+              }}
+              placeholder="Untitled"
+            />
+            <p className="flex items-center gap-1.5 font-label-meta text-xs text-ink-soft">
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-forest">
+                {signedIn ? 'cloud_done' : 'check_circle'}
+              </span>
+              {signedIn ? 'Saved to your account' : 'Saved on this device'}
+            </p>
           </div>
+          <button
+            onClick={() => onOpenPrompter(script.id)}
+            className="shrink-0 self-start md:self-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark transition-all active:scale-95 shadow-xs cursor-pointer"
+            type="button"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[20px]">play_arrow</span>
+            <span>Open prompter</span>
+          </button>
         </section>
 
-        {/* Editorial Layout Grid: 2 Columns (Editor 70%, Metarail 30%) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Workspace: The Tactile Script Canvas */}
-          <main className="lg:col-span-8 flex flex-col gap-4">
-            {/* In-Editor Toolbar Strip */}
-            <div className="bg-paper-raised rounded-lg p-2 flex flex-wrap items-center justify-between gap-3 border border-paper-line shadow-xs">
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => insertNote('[PAUSE 2s]')}
-                  className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Insert a [PAUSE 2s] note"
-                  type="button"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-tertiary">timer</span>
-                  <span>+ 2s Pause</span>
-                </button>
-                <button
-                  onClick={() => insertNote('[CAMERA LOOK]')}
-                  className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Insert a [CAMERA LOOK] note"
-                  type="button"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-primary">visibility</span>
-                  <span>+ Lens Cue</span>
-                </button>
-                <button
-                  onClick={insertStress}
-                  className="px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Stress the selected words, or the word at the cursor. Shown in bold in the prompter."
-                  type="button"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">format_italic</span>
-                  <span>Stress</span>
-                </button>
-              </div>
+        {/* Toolbar */}
+        <div className="bg-paper-raised rounded-lg p-2 flex flex-wrap items-center justify-between gap-2 border border-paper-line shadow-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => insertNote('[PAUSE 2s]')}
+              disabled={!writing}
+              className={toolButton}
+              title="Insert a [PAUSE 2s] note"
+              type="button"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-tertiary">timer</span>
+              <span>+ 2s Pause</span>
+            </button>
+            <button
+              onClick={() => insertNote('[CAMERA LOOK]')}
+              disabled={!writing}
+              className={toolButton}
+              title="Insert a [CAMERA LOOK] note"
+              type="button"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-primary">visibility</span>
+              <span>+ Camera look</span>
+            </button>
+            <button
+              onClick={insertStress}
+              disabled={!writing}
+              className={toolButton}
+              title="Stress the selected words, or the word at the cursor. Shown in bold in the prompter."
+              type="button"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">format_bold</span>
+              <span>Stress</span>
+            </button>
+            <input ref={fileInputRef} type="file" accept=".docx,.txt,.md" className="hidden" onChange={handleFileImport} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!writing}
+              className={toolButton}
+              title="Import a Word (.docx), .txt or .md file. From Google Docs: File > Download > Microsoft Word."
+              type="button"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">upload_file</span>
+              <span>Import Word / text file</span>
+            </button>
+            <button
+              onClick={handleClear}
+              disabled={!writing}
+              className="px-2 py-1.5 rounded hover:bg-paper-sunk text-ink-soft hover:text-ink font-label-meta text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Clear the whole script"
+              type="button"
+            >
+              Clear
+            </button>
+          </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".docx,.txt,.md"
-                  className="hidden"
-                  onChange={handleFileImport}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors border border-paper-line/50"
-                  title="Import a Word (.docx), .txt or .md file. From Google Docs: File > Download > Microsoft Word."
-                  type="button"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">upload_file</span>
-                  <span>Import Word / text file</span>
-                </button>
-                <button
-                  onClick={handleClear}
-                  className="px-2 py-1.5 rounded hover:bg-paper-sunk text-ink-soft hover:text-ink font-label-meta text-xs transition-colors cursor-pointer"
-                  title="Clear the whole script"
-                  type="button"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center rounded-lg bg-paper-sunk p-0.5" role="group" aria-label="Write or preview">
+            {(
+              [
+                ['write', 'Write'],
+                ['preview', 'Preview'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setMode(value)}
+                aria-pressed={mode === value}
+                className={`px-3 py-1 rounded-md font-label-meta text-xs cursor-pointer transition-colors ${
+                  mode === value ? 'bg-paper-raised text-ink font-semibold shadow-xs' : 'text-ink-soft hover:text-ink'
+                }`}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            {/* Tactile Manuscript Card */}
-            <div className="relative bg-paper-raised rounded-xl p-8 sm:p-10 border border-paper-line shadow-xs">
-              {/* Speech Cadence Guide Overlay */}
-              <div className="mb-6 p-4 rounded-lg bg-marker-soft flex items-start gap-3 border border-marker-border/40">
-                <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-on-tertiary-container mt-0.5 shrink-0">
-                  info
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <h2 className="font-body-sm text-sm font-semibold text-ink">Notes to yourself</h2>
-                  <p className="font-body-sm text-xs text-on-secondary-container leading-relaxed">
-                    Text in brackets like{' '}
-                    <code className="font-label-meta text-[11px] bg-paper-raised px-1 py-0.5 rounded text-ink border border-paper-line">
-                      [PAUSE]
-                    </code>{' '}
-                    shows in the prompter as a reminder. You don’t need to read it aloud.
+        {showNotesHint && (
+          <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-marker-soft/60 border border-marker-border/30 font-body-sm text-xs text-ink-soft">
+            <span>
+              Text in <code className="font-label-meta text-[11px] bg-paper-raised px-1 py-0.5 rounded text-ink">[brackets]</code> is a note to
+              yourself: it stays on screen in the prompter, and you don’t read it aloud.
+            </span>
+            <button
+              aria-label="Dismiss this hint"
+              onClick={dismissNotesHint}
+              className="shrink-0 text-ink-soft hover:text-ink cursor-pointer p-0.5"
+              type="button"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        )}
+
+        {/* The script */}
+        <div className="bg-paper-raised rounded-xl border border-paper-line shadow-xs">
+          <div className="p-6 sm:p-10">
+            {writing ? (
+              <textarea
+                ref={editorRef}
+                value={content}
+                onChange={handleContentChange}
+                className="w-full min-h-[360px] overflow-hidden bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading"
+                placeholder="Type or paste your script here"
+                spellCheck="true"
+              />
+            ) : paragraphs.length === 0 ? (
+              <p className="min-h-[360px] font-body-sm text-sm text-ink-faint">Nothing to preview yet. Switch to Write and add your script.</p>
+            ) : (
+              <div className="min-h-[360px] space-y-6 font-prompter-reading text-lg sm:text-xl text-ink leading-[1.8]">
+                {paragraphs.map((words, i) => (
+                  <p key={i}>
+                    {words.map((w, j) => (
+                      <span
+                        key={j}
+                        className={`mr-[0.28em] ${
+                          w.cue
+                            ? 'text-[0.6em] align-middle font-label-meta uppercase tracking-wider text-forest opacity-80'
+                            : w.emphasis
+                            ? 'font-bold'
+                            : ''
+                        }`}
+                      >
+                        {w.display}
+                      </span>
+                    ))}
                   </p>
-                </div>
-              </div>
-
-              {/* Script Textarea / Editor Surface */}
-              <div className="relative min-h-[460px]">
-                <textarea
-                  ref={editorRef}
-                  value={content}
-                  onChange={handleContentChange}
-                  className="w-full bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading min-h-[460px]"
-                  placeholder="Type or paste your script here"
-                  spellCheck="true"
-                />
-              </div>
-
-              {/* Script Meta Footer Hairline Strip */}
-              <div className="mt-8 pt-4 bg-paper-sunk/40 -mx-8 sm:-mx-10 -mb-8 sm:-mb-10 px-8 sm:px-10 py-3.5 rounded-b-xl flex flex-wrap items-center justify-between gap-4 border-t border-paper-line/50">
-                <div className="flex items-center gap-3">
-                  <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-forest">analytics</span>
-                  <span className="font-label-meta text-xs text-ink">
-                    <span className="font-bold">{words}</span> words ·{' '}
-                    <span className="font-bold">{formattedReadTime}</span> estimated read time
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-forest"></span>
-                  <span className="font-label-meta text-xs text-ink-soft">Auto-synced</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Tips Card */}
-            {showProTip && (
-              <div className="bg-forest-tint rounded-lg p-4 flex items-center justify-between gap-4 border border-forest/20">
-                <div className="flex items-center gap-3">
-                  <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px] shrink-0">psychology</span>
-                  <p className="font-body-sm text-sm text-ink leading-relaxed">
-                    <span className="font-semibold text-primary">Pro Delivery Tip:</span> Maintain natural eye movement
-                    by placing your laptop or mobile display directly beneath your lens glass.
-                  </p>
-                </div>
-                <button aria-label="Close"
-                  onClick={() => setShowProTip(false)}
-                  className="shrink-0 text-ink-soft hover:text-ink cursor-pointer p-1"
-                  type="button"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">close</span>
-                </button>
+                ))}
               </div>
             )}
-          </main>
+          </div>
 
-          {/* Right Metarail: reading pace & script actions */}
-          <aside className="lg:col-span-4 flex flex-col gap-6">
-            {/* Speech Pace Configuration Card */}
-            <div className="bg-paper-raised rounded-xl p-6 flex flex-col gap-5 border border-paper-line shadow-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-forest">speed</span>
-                  <h2 className="font-title-md text-base sm:text-lg font-semibold text-ink">Reading pace</h2>
-                </div>
-                <span className="font-label-meta text-xs px-2.5 py-0.5 rounded bg-paper-sunk text-ink font-semibold border border-paper-line/50">
-                  {pacingWpm} WPM
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center text-ink-soft font-label-meta text-xs">
-                  <span>Sets the read-time estimate and the auto-scroll speed</span>
-                  
-                </div>
+          {/* Bottom bar: length, pace and script actions */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-6 sm:px-10 py-3 border-t border-paper-line/60 bg-paper-sunk/40 rounded-b-xl">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <span className="font-label-meta text-xs text-ink">
+                <span className="font-bold">{words}</span> words · <span className="font-bold">{formattedReadTime}</span>
+              </span>
+              <label className="flex items-center gap-2 font-label-meta text-xs text-ink-soft" title="Sets the read-time estimate and the auto-scroll speed">
+                <span>Pace</span>
                 <input
                   type="range"
                   min="110"
@@ -412,63 +409,31 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                   step="5"
                   value={pacingWpm}
                   onChange={(e) => handlePaceChange(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 bg-paper-sunk rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                  className="w-28 h-1.5 bg-paper-sunk rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                  aria-label="Reading pace in words per minute"
                 />
-                <div className="flex justify-between items-center font-label-meta text-[11px] text-ink-faint mt-1">
-                  <span>110 wpm (Narrative)</span>
-                  <span>150 (Default)</span>
-                  <span>210 (Keynote)</span>
-                </div>
-              </div>
-
+                <span className="w-16 text-ink font-semibold">{pacingWpm} wpm</span>
+              </label>
             </div>
-
-            {/* Secondary Management Actions */}
-            <div className="bg-paper-raised rounded-xl p-4 flex flex-col gap-1.5 border border-paper-line shadow-xs">
-              <button
-                onClick={() => onDuplicateScript(script.id)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-ink hover:bg-paper-sunk font-body-sm text-xs transition-colors text-left cursor-pointer"
-                type="button"
-              >
-                <span className="flex items-center gap-2.5">
-                  <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">content_copy</span>
-                  Duplicate script
-                </span>
-                
+            <div className="flex items-center gap-1">
+              <button onClick={() => onDuplicateScript(script.id)} className={barButton} type="button">
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">content_copy</span>
+                Duplicate
               </button>
-
-              <button
-                onClick={exportTextFile}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-ink hover:bg-paper-sunk font-body-sm text-xs transition-colors text-left cursor-pointer"
-                type="button"
-              >
-                <span className="flex items-center gap-2.5">
-                  <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-ink-soft">file_download</span>
-                  Download as a .txt file
-                </span>
-                <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-ink-faint">download</span>
+              <button onClick={exportTextFile} className={barButton} type="button">
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">download</span>
+                Download .txt
               </button>
-
-              <div className="h-[1px] bg-paper-line my-1"></div>
-
               <button
                 onClick={() => onDeleteScript(script.id)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-rec hover:bg-rec-tint font-body-sm text-xs transition-colors text-left cursor-pointer"
+                className={`${barButton} hover:text-rec! hover:bg-rec-tint!`}
                 type="button"
               >
-                <span className="flex items-center gap-2.5">
-                  <span aria-hidden="true" className="material-symbols-outlined text-[18px]">delete</span>
-                  Delete script
-                </span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">delete</span>
+                Delete
               </button>
             </div>
-
-            {/* Quick Hardware Specs Card */}
-            <div className="px-3 py-2 flex items-center justify-between font-label-meta text-xs text-ink-faint">
-              <span>Script ID: {script.id}</span>
-              <span>Plain text</span>
-            </div>
-          </aside>
+          </div>
         </div>
       </div>
     </div>

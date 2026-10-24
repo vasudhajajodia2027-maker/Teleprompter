@@ -586,6 +586,7 @@ export default function App() {
               ) : (
                 <ScriptEditorView
                   script={activeScript}
+                  signedIn={!!user}
                   onUpdateScript={handleUpdateScript}
                   onOpenPrompter={handleOpenPrompter}
                   onDuplicateScript={handleDuplicateScript}
