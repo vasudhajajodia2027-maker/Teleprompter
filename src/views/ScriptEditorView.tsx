@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { nowStamp } from '../lib/scriptTime';
-import { formatStoredReadTime, readSeconds, spokenWordCount, stripMarkdown } from '../lib/scriptText';
+import { formatStoredReadTime, readSeconds, spokenWordCount } from '../lib/scriptText';
+import { readScriptFile, UNSUPPORTED_FILE_MESSAGE } from '../lib/scriptImport';
 import { Script } from '../types';
 
 interface ScriptEditorViewProps {
@@ -155,26 +156,27 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     }
   };
 
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     // Lets the same file be chosen again later.
     e.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const raw = (evt.target?.result as string) || '';
-      const text = /\.(md|markdown)$/i.test(file.name) ? stripMarkdown(raw) : raw;
-      const el = editorRef.current;
-      if (!el) return;
-      if (
-        el.value.trim() &&
-        !confirm(`Replace this script with “${file.name}”? You can bring the current text back with Undo (Ctrl+Z).`)
-      ) {
-        return;
-      }
-      replaceRange(0, el.value.length, text, 0);
-    };
-    reader.readAsText(file);
+    let text: string;
+    try {
+      ({ text } = await readScriptFile(file));
+    } catch (err) {
+      alert(err instanceof Error && err.message === UNSUPPORTED_FILE_MESSAGE ? err.message : `Couldn’t read “${file.name}”.`);
+      return;
+    }
+    const el = editorRef.current;
+    if (!el) return;
+    if (
+      el.value.trim() &&
+      !confirm(`Replace this script with “${file.name}”? You can bring the current text back with Undo (Ctrl+Z).`)
+    ) {
+      return;
+    }
+    replaceRange(0, el.value.length, text, 0);
   };
 
   const exportTextFile = () => {
@@ -292,17 +294,18 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt,.md"
+                  accept=".docx,.txt,.md"
                   className="hidden"
                   onChange={handleFileImport}
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="cursor-pointer px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors border border-paper-line/50"
+                  title="Import a Word (.docx), .txt or .md file. From Google Docs: File > Download > Microsoft Word."
                   type="button"
                 >
                   <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-ink-soft">upload_file</span>
-                  <span>Import .txt / .md</span>
+                  <span>Import Word / text file</span>
                 </button>
                 <button
                   onClick={handleClear}

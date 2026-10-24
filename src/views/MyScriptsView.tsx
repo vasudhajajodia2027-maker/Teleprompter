@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Script, LicenseStatus } from '../types';
 import { ASSETS } from '../data/defaultScripts';
 import { editedTime, formatEdited, formatReadTime } from '../lib/scriptTime';
-import { readSeconds, spokenWordCount, stripMarkdown } from '../lib/scriptText';
+import { readSeconds, spokenWordCount } from '../lib/scriptText';
+import { readScriptFile, UNSUPPORTED_FILE_MESSAGE } from '../lib/scriptImport';
 
 interface MyScriptsViewProps {
   scripts: Script[];
@@ -66,18 +67,15 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
       reader.readAsText(file);
       return;
     }
-    if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
-      alert('Choose a .txt or .md text file, or a First Take backup (.json).');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const raw = (e.target?.result as string) || '';
-      const content = /\.(md|markdown)$/i.test(file.name) ? stripMarkdown(raw) : raw;
-      const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-      onImportScript(title, content);
-    };
-    reader.readAsText(file);
+    readScriptFile(file).then(
+      ({ title, text }) => onImportScript(title, text),
+      (err) =>
+        alert(
+          err instanceof Error && err.message === UNSUPPORTED_FILE_MESSAGE
+            ? 'Choose a Word (.docx), .txt or .md file, or a First Take backup (.json).'
+            : `Couldn’t read “${file.name}”.`
+        )
+    );
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -106,7 +104,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,.json"
+              accept=".docx,.txt,.md,.json"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
@@ -309,7 +307,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
             <h4 className="font-title-md text-base sm:text-lg text-ink font-semibold">Import a script</h4>
             <p className="font-body-sm text-sm text-ink-soft mt-1">Drop a file here, or click to choose one</p>
             <span className="mt-4 font-label-meta text-xs text-ink-faint">
-              Text files (.txt, .md), or a First Take backup (.json) to restore it
+              Word or Google Docs (.docx), text files (.txt, .md), or a First Take backup (.json) to restore it
             </span>
           </div>
 
