@@ -2129,7 +2129,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleRecord}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
+              className={`flex items-center gap-1.5 px-4 h-11 rounded-xl transition-all active:scale-95 shadow-xs cursor-pointer font-body-sm text-sm font-semibold ${
                 isRecording
                   ? 'bg-rec hover:bg-rec/90 text-white animate-pulse'
                   : 'bg-rec hover:bg-rec/90 text-white'
@@ -2137,9 +2137,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               title={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
               aria-label={isRecording ? 'Stop recording (R)' : 'Start countdown & record (R)'}
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[24px]">
-                {isRecording ? 'stop' : 'radio_button_checked'}
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {isRecording ? 'stop' : 'fiber_manual_record'}
               </span>
+              <span>{isRecording ? 'Stop' : 'Record'}</span>
             </button>
 
             <button
