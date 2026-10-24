@@ -103,7 +103,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
       onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="fixed inset-0 left-64 z-30 pointer-events-none flex items-center justify-center bg-forest-tint/40 border-4 border-dashed border-forest/60">
+        <div className="fixed inset-0 md:left-64 z-30 pointer-events-none flex items-center justify-center bg-forest-tint/40 border-4 border-dashed border-forest/60">
           <p className="px-5 py-3 rounded-xl bg-paper-raised shadow-lg font-title-md text-base text-ink">
             Drop to import (Word, .txt, .md or a backup)
           </p>

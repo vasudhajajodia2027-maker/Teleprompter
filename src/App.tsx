@@ -98,6 +98,9 @@ export default function App() {
   const { user, loading: authLoading } = useAuth();
   const [currentView, setCurrentView] = useState<AppView>(getInitialView);
   const [activeSidebarSection, setActiveSidebarSection] = useState<'scripts' | 'prompter'>('scripts');
+  // Phones: the dashboard sidebar is a drawer, closed whenever the page changes.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => setSidebarOpen(false), [currentView]);
   const [selectedScriptId, setSelectedScriptId] = useState<string>('ft-08492');
 
   // Sync state with browser Back/Forward buttons
@@ -548,13 +551,23 @@ export default function App() {
               if (sec === 'scripts') handleNavigate('scripts');
               else if (sec === 'prompter') handleOpenPrompter(activeScript.id);
             }}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
           />
 
           {/* Scripts never reach Clarity session replays. */}
-          <div className="pl-64 min-h-screen flex flex-col" data-clarity-mask="true">
+          <div className="md:pl-64 min-h-screen flex flex-col" data-clarity-mask="true">
             {/* Top Workspace Header */}
-            <header className="fixed top-0 left-64 right-0 h-16 bg-paper shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-paper-line/50 z-40 flex items-center justify-between px-8">
+            <header className="fixed top-0 left-0 md:left-64 right-0 h-16 bg-paper shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-paper-line/50 z-30 flex items-center justify-between px-4 sm:px-8">
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="md:hidden -ml-1 w-9 h-9 rounded-lg flex items-center justify-center text-ink-soft hover:text-ink hover:bg-paper-sunk cursor-pointer"
+                  aria-label="Open menu"
+                  aria-expanded={sidebarOpen}
+                >
+                  <span aria-hidden="true" className="material-symbols-outlined text-[22px]">menu</span>
+                </button>
                 <button
                   onClick={() => handleNavigate('overview')}
                   className="font-label-meta text-xs text-ink-soft uppercase tracking-wider hover:text-ink transition-colors cursor-pointer flex items-center gap-1.5"
@@ -568,7 +581,7 @@ export default function App() {
             </header>
 
             {/* Dashboard Content */}
-            <main className="relative pt-20 bg-paper min-h-screen w-full px-8">
+            <main className="relative pt-20 bg-paper min-h-screen w-full px-4 sm:px-8">
               {currentView === 'scripts' ? (
                 <MyScriptsView
                   scripts={scripts}
@@ -599,7 +612,7 @@ export default function App() {
             {undoDelete && (
               <div
                 role="status"
-                className="fixed bottom-6 left-[calc(50%+128px)] -translate-x-1/2 z-50 flex items-center gap-4 pl-5 pr-2 py-2 rounded-xl bg-night-paper text-white shadow-2xl font-body-sm text-sm"
+                className="fixed bottom-6 left-1/2 md:left-[calc(50%+128px)] -translate-x-1/2 z-50 flex items-center gap-4 pl-5 pr-2 py-2 rounded-xl bg-night-paper text-white shadow-2xl font-body-sm text-sm"
               >
                 <span className="max-w-[320px] truncate">Deleted “{undoDelete.script.title}”</span>
                 <button

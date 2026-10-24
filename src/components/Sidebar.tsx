@@ -8,6 +8,9 @@ interface SidebarProps {
   onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
   onNewScript: () => void;
   onSelectSection?: (section: 'scripts' | 'prompter') => void;
+  // Below md the sidebar is a drawer: hidden unless open, closed by onClose.
+  open?: boolean;
+  onClose?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -16,6 +19,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   onNewScript,
   onSelectSection,
+  open = false,
+  onClose,
 }) => {
   const { user, signInWithGoogle, signOutUser } = useAuth();
 
@@ -23,14 +28,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (onSelectSection) onSelectSection(target);
     if (target === 'scripts') onNavigate('scripts');
     else if (target === 'prompter') onNavigate('prompter');
+    onClose?.();
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-paper-sunk z-50 flex flex-col justify-between p-6 border-r border-paper-line">
+    <>
+    {open && (
+      <div className="md:hidden fixed inset-0 z-40 bg-black/30" onClick={onClose} aria-hidden="true"></div>
+    )}
+    <aside
+      className={`fixed left-0 top-0 h-full w-64 bg-paper-sunk z-50 flex flex-col justify-between p-6 border-r border-paper-line transition-transform duration-200 md:translate-x-0 ${
+        open ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      }`}
+    >
       <div className="flex flex-col gap-8">
         {/* Brand */}
-        <button 
-          onClick={() => onNavigate('overview')}
+        <button
+          onClick={() => {
+            onNavigate('overview');
+            onClose?.();
+          }}
           className="flex items-center gap-3 text-left focus:outline-none cursor-pointer group"
         >
           <BrandLogo size="sm" showSubtitle={false} />
@@ -104,5 +121,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </aside>
+    </>
   );
 };
