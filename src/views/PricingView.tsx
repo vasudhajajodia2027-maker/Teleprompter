@@ -137,12 +137,42 @@ export const PricingView: React.FC<PricingViewProps> = ({
               Frequently asked questions
             </h2>
             <p className="font-body-sm text-sm text-ink-soft">
-              Browsers, video files, and where your data is stored.
+              Paying, refunds, browsers, video files, and where your data is stored.
             </p>
           </div>
 
           <div className="rounded-xl bg-paper-raised border border-paper-line overflow-hidden shadow-xs">
             <div className="divide-y divide-paper-line">
+              <div className="p-6 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">payments</span>
+                    How do I pay, and what happens after?
+                  </h3>
+                  <span className="font-label-meta text-xs text-ink-faint">Payment</span>
+                </div>
+                <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
+                  {PAYMENTS_ENABLED
+                    ? 'Sign in with Google, then pay once through Dodo Payments. Your purchase is linked to that Google account and switches on within a few seconds. Dodo Payments emails you the receipt.'
+                    : 'Buying opens soon. When it does, you sign in with Google and pay once through Dodo Payments. Your purchase is linked to that Google account, and Dodo Payments emails you the receipt.'}
+                </p>
+              </div>
+
+              <div className="p-6 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">undo</span>
+                    Can I get a refund?
+                  </h3>
+                  <span className="font-label-meta text-xs text-ink-faint">Refunds</span>
+                </div>
+                <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
+                  Yes. Ask within 14 days of buying and you get the full amount back, no questions asked. There is no
+                  subscription, so there is nothing to cancel.{' '}
+                  <a href="/refunds" className="text-forest underline hover:text-forest-dark">Read the refund policy</a>.
+                </p>
+              </div>
+
               <div className="p-6 space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { PAYMENTS_ENABLED } from '../lib/payments';
 
 interface TermsOfServiceViewProps {
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact') => void;
 }
 
 export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNavigate }) => {
@@ -64,7 +64,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
           </li>
           <li className="flex items-start gap-2">
             <span className="text-forest font-bold">•</span>
-            <span><strong>14-day money-back guarantee:</strong> Once paid checkout opens, every purchase includes a full 14-day refund window.</span>
+            <span><strong>14-day money-back guarantee:</strong> {PAYMENTS_ENABLED ? 'Every' : 'Once paid checkout opens, every'} purchase includes a full 14-day refund window. See the <a href="/refunds" className="text-forest underline">refund policy</a>.</span>
           </li>
         </ul>
       </div>
@@ -109,20 +109,27 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
 
             <div className="pt-2 border-t border-paper-line/50">
               <h3 className="font-title-md font-semibold text-ink text-base mb-1">
-                B. The Planned Lifetime License
+                B. The Lifetime License
               </h3>
               <p>
-                We plan to offer a single, one-time lifetime license at an early price of ₹199 (in India) or US$2 (elsewhere). This purchase grants permanent access to First Take for personal and commercial content creation, including unlimited scripts, unlimited video takes, camera and microphone export, optical mirror mode, and all future updates with no recurring subscription fees.
+                {PAYMENTS_ENABLED ? 'We offer' : 'We plan to offer'} a single, one-time lifetime license at an early price of ₹199 (in India) or US$2 (elsewhere). This purchase grants permanent access to First Take for personal and commercial content creation, including unlimited scripts, unlimited video takes, camera and microphone export, optical mirror mode, and all future updates with no recurring subscription fees.
               </p>
             </div>
 
             <div className="pt-2 border-t border-paper-line/50">
               <h3 className="font-title-md font-semibold text-ink text-base mb-1">
-                C. Current Waitlist Status
+                {PAYMENTS_ENABLED ? 'C. Payments' : 'C. Current Waitlist Status'}
               </h3>
-              <p>
-                <strong>Checkout is not live yet.</strong> Submitting your email on our checkout page joins the waitlist. You are not charged, and no payment method is collected. We will notify waitlist members by email as soon as checkout becomes active.
-              </p>
+              {PAYMENTS_ENABLED ? (
+                <p>
+                  Payments are processed by Dodo Payments, who act as the merchant of record and send your receipt. Your license is linked to the Google account you sign in with when you buy. Refunds follow our{' '}
+                  <a href="/refunds" className="text-forest font-medium underline hover:text-forest-dark">refund policy</a>.
+                </p>
+              ) : (
+                <p>
+                  <strong>Checkout is not live yet.</strong> Submitting your email on our checkout page joins the waitlist. You are not charged, and no payment method is collected. We will notify waitlist members by email as soon as checkout becomes active.
+                </p>
+              )}
             </div>
 
             <div className="pt-2 border-t border-paper-line/50">

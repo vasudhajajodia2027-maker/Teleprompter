@@ -14,7 +14,7 @@ interface CheckoutFlowViewProps {
   onOpenScripts: () => void;
 }
 
-type CheckoutStep = 'details' | 'confirmation' | 'paid';
+type CheckoutStep = 'details' | 'confirmation' | 'paid' | 'failed';
 
 // Dodo sends the buyer back to /checkout?paid=1&payment_id=...&status=...
 // The license is turned on by the dodo-webhook function, usually within a
@@ -37,12 +37,8 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
   onOpenScripts,
 }) => {
   const { signInWithGoogle } = useAuth();
-  const [step, setStep] = useState<CheckoutStep>(() =>
-    PAYMENTS_ENABLED && checkoutReturn() === 'paid' ? 'paid' : 'details'
-  );
-  const [checkoutError, setCheckoutError] = useState(() =>
-    PAYMENTS_ENABLED && checkoutReturn() === 'failed' ? 'The payment did not go through. You have not been charged; please try again.' : ''
-  );
+  const [step, setStep] = useState<CheckoutStep>(() => (PAYMENTS_ENABLED ? checkoutReturn() : null) ?? 'details');
+  const [checkoutError, setCheckoutError] = useState('');
   const [activationTimedOut, setActivationTimedOut] = useState(false);
 
   // After payment, poll the license until the webhook has turned Pro on.
@@ -132,7 +128,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-raised border border-paper-line text-ink-soft shadow-xs">
               <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-forest">lock</span>
               <span className="font-label-meta tracking-widest text-[11px] uppercase font-bold text-ink-soft">
-                WAITLIST
+                {PAYMENTS_ENABLED ? 'Secure checkout' : 'Waitlist'}
               </span>
             </div>
 
@@ -253,6 +249,12 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                           ? 'Paid once through Dodo Payments. Your purchase is linked to the Google account you signed in with.'
                           : 'Sign in so your purchase is linked to your account. Payment is handled by Dodo Payments.'}
                       </p>
+                      <p className="text-center font-body-sm text-xs text-ink-soft leading-relaxed px-2">
+                        14-day money-back guarantee.{' '}
+                        <a href="/refunds" className="text-forest underline hover:text-forest-dark">Refund policy</a>
+                        {' · '}By buying you agree to the{' '}
+                        <a href="/terms" className="text-forest underline hover:text-forest-dark">Terms</a>.
+                      </p>
                     </>
                   )}
                 </div>
@@ -317,10 +319,10 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0">graphic_eq</span>
                 <span className="font-label-meta text-xs font-semibold text-ink">Script follows your voice</span>
               </div>
-              <div className="p-3.5 rounded-lg bg-paper-raised border border-paper-line flex items-center gap-3">
+              <a href="/refunds" className="p-3.5 rounded-lg bg-paper-raised border border-paper-line hover:border-forest/40 transition-colors flex items-center gap-3">
                 <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0">verified</span>
-                <span className="font-label-meta text-xs font-semibold text-ink">14-Day Guarantee</span>
-              </div>
+                <span className="font-label-meta text-xs font-semibold text-ink">14-day money-back guarantee</span>
+              </a>
             </div>
           </div>
         )}
@@ -415,13 +417,81 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               </p>
             </div>
             {isPro && (
+              <div className="space-y-3">
+                <button
+                  onClick={onOpenPrompter}
+                  className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer"
+                >
+                  Open the teleprompter →
+                </button>
+                <button
+                  onClick={onOpenScripts}
+                  className="w-full py-3 px-6 rounded-lg bg-paper-raised border border-paper-line text-ink font-body-sm text-sm font-medium hover:bg-paper-sunk transition-colors cursor-pointer"
+                >
+                  Go to my scripts
+                </button>
+              </div>
+            )}
+            {!isSignedIn && (
               <button
-                onClick={onOpenPrompter}
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem(RESUME_CHECKOUT_KEY, '1');
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                  signInWithGoogle();
+                }}
                 className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer"
               >
-                Open the teleprompter →
+                Sign in with Google →
               </button>
             )}
+            <div className="p-5 rounded-xl bg-paper-raised border border-paper-line text-left font-body-sm text-sm text-ink-soft leading-relaxed space-y-1.5">
+              <p>Dodo Payments emails your receipt to the address you paid with.</p>
+              <p>
+                Changed your mind? You have 14 days to ask for a full refund.{' '}
+                <a href="/refunds" className="text-forest underline hover:text-forest-dark">How refunds work</a>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 5 – BACK FROM DODO: PAYMENT DID NOT GO THROUGH          */}
+        {/* ============================================================== */}
+        {step === 'failed' && (
+          <div className="w-full max-w-xl mx-auto space-y-8 animate-fadeIn text-center">
+            <div className="space-y-3">
+              <div className="w-16 h-16 rounded-full bg-rec-tint text-rec mx-auto flex items-center justify-center shadow-xs">
+                <span aria-hidden="true" className="material-symbols-outlined text-[36px]">credit_card_off</span>
+              </div>
+              <h1 className="font-display text-4xl sm:text-5xl text-ink leading-tight">Payment didn't go through</h1>
+              <p className="font-lead text-base sm:text-lg text-ink-soft max-w-md mx-auto leading-relaxed">
+                You have not been charged. This usually happens when the bank declines the payment or the checkout
+                window was closed.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  window.history.replaceState({}, '', '/checkout');
+                  setStep('details');
+                }}
+                className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer"
+              >
+                Try again
+              </button>
+              <a
+                href="/contact"
+                className="block w-full py-3 px-6 rounded-lg bg-paper-raised border border-paper-line text-ink font-body-sm text-sm font-medium hover:bg-paper-sunk transition-colors"
+              >
+                Contact us
+              </a>
+            </div>
+            <p className="font-body-sm text-xs text-ink-soft">
+              If money left your account anyway, email support@firsttakestudio.com with the time of the payment and we will sort it out.
+            </p>
           </div>
         )}
       </main>

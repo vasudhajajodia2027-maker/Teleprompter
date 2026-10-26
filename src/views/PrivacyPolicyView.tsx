@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { PAYMENTS_ENABLED } from '../lib/payments';
 
 interface PrivacyPolicyViewProps {
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact') => void;
 }
 
 export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => {

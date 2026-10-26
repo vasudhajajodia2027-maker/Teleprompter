@@ -21,9 +21,11 @@ import { PricingView } from './views/PricingView';
 import { CheckoutFlowView } from './views/CheckoutFlowView';
 import { PrivacyPolicyView } from './views/PrivacyPolicyView';
 import { TermsOfServiceView } from './views/TermsOfServiceView';
+import { RefundPolicyView } from './views/RefundPolicyView';
+import { ContactView } from './views/ContactView';
 import { useAuth } from './context/AuthContext';
 import { supabase } from '../utils/supabase/client';
-import { RESUME_CHECKOUT_KEY } from './lib/payments';
+import { PAYMENTS_ENABLED, RESUME_CHECKOUT_KEY } from './lib/payments';
 
 const LICENSE_CACHE_KEY = 'ft_license_store';
 
@@ -56,13 +58,15 @@ async function fetchServerLicense(userId: string): Promise<LicenseStatus | null>
   };
 }
 
-export type AppView = 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
+export type AppView = 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact';
 
 function getInitialView(): AppView {
   if (typeof window !== 'undefined') {
     const path = window.location.pathname.toLowerCase();
     if (path === '/privacy' || path.startsWith('/privacy')) return 'privacy';
     if (path === '/terms' || path.startsWith('/terms')) return 'terms';
+    if (path === '/refunds' || path.startsWith('/refund')) return 'refunds';
+    if (path === '/contact' || path.startsWith('/contact')) return 'contact';
     if (path === '/checkout' || path.startsWith('/checkout')) return 'checkout';
     if (path === '/pricing' || path.startsWith('/pricing')) return 'pricing';
     if (path === '/scripts' || path.startsWith('/scripts')) return 'scripts';
@@ -78,6 +82,10 @@ function getPathForView(view: AppView): string {
       return '/privacy';
     case 'terms':
       return '/terms';
+    case 'refunds':
+      return '/refunds';
+    case 'contact':
+      return '/contact';
     case 'checkout':
       return '/checkout';
     case 'pricing':
@@ -124,8 +132,12 @@ export default function App() {
       document.title = 'Terms of Service — First Take';
     } else if (currentView === 'pricing') {
       document.title = 'Pricing — First Take';
+    } else if (currentView === 'refunds') {
+      document.title = 'Refunds & Cancellation — First Take';
+    } else if (currentView === 'contact') {
+      document.title = 'Contact — First Take';
     } else if (currentView === 'checkout') {
-      document.title = 'Join the Waitlist — First Take';
+      document.title = PAYMENTS_ENABLED ? 'Buy First Take' : 'Join the Waitlist — First Take';
     } else {
       document.title = 'First Take — Speech-Responsive Teleprompter';
     }
@@ -638,6 +650,10 @@ export default function App() {
               <PrivacyPolicyView onNavigate={handleNavigate} />
             ) : currentView === 'terms' ? (
               <TermsOfServiceView onNavigate={handleNavigate} />
+            ) : currentView === 'refunds' ? (
+              <RefundPolicyView onNavigate={handleNavigate} />
+            ) : currentView === 'contact' ? (
+              <ContactView onNavigate={handleNavigate} />
             ) : currentView === 'pricing' ? (
               <PricingView
                 license={license}
