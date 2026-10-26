@@ -1,0 +1,2 @@
+@sapphi-red/web-noise-suppressor 0.4.1 (MIT), files copied unchanged from dist/: rnnoise/workletProcessor.js (renamed rnnoise-worklet.js), rnnoise.wasm, rnnoise_simd.wasm.
+RNNoise itself: https://github.com/xiph/rnnoise (BSD-3-Clause).

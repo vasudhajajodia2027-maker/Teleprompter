@@ -10,6 +10,7 @@ import { createVoiceActivityDetector } from '../lib/voiceActivity';
 import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
 import { track } from '../lib/track';
 import { installOnDevice, onDeviceStatus, scriptPhrases } from '../lib/onDeviceSpeech';
+import { createDenoisedAudio, micAudioConstraints, NOISE_MODE_KEY, NOISE_MODES, readNoiseMode, type DenoisedAudio, type NoiseMode } from '../lib/noise';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -240,6 +241,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       console.warn(e);
     }
   }, [textStyle]);
+  // Background noise handling (lib/noise). Off and Standard change the
+  // browser's own microphone processing; Strong also cleans the recording.
+  const [noiseMode, setNoiseMode] = useState<NoiseMode>(readNoiseMode);
+  const noiseModeRef = useRef<NoiseMode>(noiseMode);
+  noiseModeRef.current = noiseMode;
+  const denoiseRef = useRef<DenoisedAudio | null>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem(NOISE_MODE_KEY, noiseMode);
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [noiseMode]);
   const nextTextStyle = (s: 'serif' | 'sans' | 'bold') => (s === 'serif' ? 'sans' : s === 'sans' ? 'bold' : 'serif');
 
   const [baseWpm, setBaseWpm] = useState<number>(() => {
@@ -675,7 +689,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     let stream = webcamStreamRef.current;
     if (!stream || stream.getAudioTracks().length === 0 || stream.getAudioTracks().every(t => t.readyState === 'ended')) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: micAudioConstraints(noiseModeRef.current) });
         if (gen !== audioInitGenRef.current) {
           // Paused (or restarted) while the browser was opening the mic.
           stream.getTracks().forEach((t) => t.stop());
@@ -1277,7 +1291,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       setCameraError(null);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-        audio: true,
+        audio: micAudioConstraints(noiseModeRef.current),
       });
 
       webcamStreamRef.current = stream;
@@ -1295,7 +1309,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     } catch (err: any) {
       console.warn('Webcam getUserMedia error:', err);
       try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: micAudioConstraints(noiseModeRef.current) });
         webcamStreamRef.current = audioStream;
         setUseLiveWebcam(false);
         setCameraError('Camera not available. You can still record audio.');
@@ -1345,13 +1359,13 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-          audio: true,
+          audio: micAudioConstraints(noiseModeRef.current),
         });
         webcamStreamRef.current = stream;
       } catch (e: any) {
         console.warn('Could not acquire camera for recording:', e);
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: micAudioConstraints(noiseModeRef.current) });
           stream = audioStream;
           webcamStreamRef.current = audioStream;
           setUseLiveWebcam(false);
@@ -1401,7 +1415,23 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       recordedChunksRef.current = [];
       const mimeType = getSupportedMimeType(audioOnly);
       const options = mimeType ? { mimeType } : undefined;
-      const recorder = new MediaRecorder(stream, options);
+
+      // Strong noise removal: record a cleaned copy of the microphone.
+      let recordStream = stream;
+      denoiseRef.current?.close();
+      denoiseRef.current = null;
+      const micTrack = stream.getAudioTracks()[0];
+      if (noiseModeRef.current === 'strong' && micTrack) {
+        try {
+          const denoised = await createDenoisedAudio(micTrack);
+          denoiseRef.current = denoised;
+          recordStream = new MediaStream([...stream.getVideoTracks(), denoised.track]);
+        } catch (e) {
+          console.warn('Strong noise removal unavailable:', e);
+          setVoiceNotice('Strong noise removal couldn’t start in this browser, so this take uses standard noise reduction.');
+        }
+      }
+      const recorder = new MediaRecorder(recordStream, options);
 
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
@@ -1410,6 +1440,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       };
 
       recorder.onstop = () => {
+        denoiseRef.current?.close();
+        denoiseRef.current = null;
         if (discardTakeRef.current) {
           discardTakeRef.current = false;
           recordedChunksRef.current = [];
@@ -1568,6 +1600,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         webcamStreamRef.current.getTracks().forEach((track) => track.stop());
       }
       cleanupWebAudioRef.current();
+      denoiseRef.current?.close();
     };
   }, []);
 
@@ -2409,6 +2442,45 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 ))}
               </select>
               <span
+                className={`material-symbols-outlined text-[18px] absolute right-2 pointer-events-none ${
+                  isNightMode ? 'text-[#A39E92]' : 'text-ink-soft'
+                }`}
+              >
+                expand_more
+              </span>
+            </label>
+
+            <label
+              className="relative flex items-center"
+              title={isRecording ? 'Change this between takes' : NOISE_MODES.find((m) => m.value === noiseMode)?.hint}
+            >
+              <span className="sr-only">Background noise</span>
+              <select
+                value={noiseMode}
+                disabled={isRecording}
+                onChange={(e) => {
+                  const mode = e.target.value as NoiseMode;
+                  setNoiseMode(mode);
+                  // Apply to the open microphone right away where the browser allows it.
+                  webcamStreamRef.current?.getAudioTracks().forEach((t) => {
+                    t.applyConstraints(micAudioConstraints(mode)).catch((err) => console.warn(err));
+                  });
+                  e.currentTarget.blur();
+                }}
+                className={`h-9 pl-3 pr-8 rounded-xl border text-sm font-body-md appearance-none cursor-pointer outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isNightMode
+                    ? 'bg-[#3A3631] border-transparent text-[#FAF7F0]'
+                    : 'bg-paper-sunk border-paper-line/60 text-ink hover:bg-paper-raised'
+                }`}
+              >
+                {NOISE_MODES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden="true"
                 className={`material-symbols-outlined text-[18px] absolute right-2 pointer-events-none ${
                   isNightMode ? 'text-[#A39E92]' : 'text-ink-soft'
                 }`}
