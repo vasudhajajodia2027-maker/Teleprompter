@@ -2,7 +2,6 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { nowStamp } from '../lib/scriptTime';
 import { formatStoredReadTime, readSeconds, spokenWordCount } from '../lib/scriptText';
 import { readScriptFile, UNSUPPORTED_FILE_MESSAGE } from '../lib/scriptImport';
-import { previewParagraphs } from '../lib/scriptPreview';
 import { Script } from '../types';
 
 interface ScriptEditorViewProps {
@@ -29,7 +28,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
   const [title, setTitle] = useState(script.title);
   const [content, setContent] = useState(script.content);
   const [pacingWpm, setPacingWpm] = useState(script.pacingWpm || 150);
-  const [mode, setMode] = useState<'write' | 'preview'>('write');
   const [showNotesHint, setShowNotesHint] = useState(() => {
     try {
       return localStorage.getItem(NOTES_HINT_KEY) !== 'true';
@@ -60,7 +58,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
   };
-  useLayoutEffect(fitEditorHeight, [content, mode]);
+  useLayoutEffect(fitEditorHeight, [content]);
   useEffect(() => {
     window.addEventListener('resize', fitEditorHeight);
     return () => window.removeEventListener('resize', fitEditorHeight);
@@ -215,12 +213,10 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const writing = mode === 'write';
   const toolButton =
-    'px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-paper-sunk';
+    'px-2.5 py-1.5 rounded bg-paper-sunk hover:bg-paper-line text-ink font-label-meta text-xs flex items-center gap-1.5 transition-colors cursor-pointer';
   const barButton =
     'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-ink-soft hover:text-ink hover:bg-paper-sunk font-body-sm text-xs transition-colors cursor-pointer';
-  const paragraphs = writing ? [] : previewParagraphs(content);
 
   return (
     <div className="flex flex-col w-full pb-16">
@@ -267,7 +263,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               onClick={() => insertNote('[PAUSE 2s]')}
-              disabled={!writing}
               className={toolButton}
               title="Insert a [PAUSE 2s] note"
               type="button"
@@ -277,7 +272,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             </button>
             <button
               onClick={() => insertNote('[CAMERA LOOK]')}
-              disabled={!writing}
               className={toolButton}
               title="Insert a [CAMERA LOOK] note"
               type="button"
@@ -287,7 +281,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             </button>
             <button
               onClick={insertStress}
-              disabled={!writing}
               className={toolButton}
               title="Stress the selected words, or the word at the cursor. Shown in bold in the prompter."
               type="button"
@@ -298,7 +291,6 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             <input ref={fileInputRef} type="file" accept=".docx,.txt,.md" className="hidden" onChange={handleFileImport} />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={!writing}
               className={toolButton}
               title="Import a Word (.docx), .txt or .md file. From Google Docs: File > Download > Microsoft Word."
               type="button"
@@ -308,34 +300,12 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             </button>
             <button
               onClick={handleClear}
-              disabled={!writing}
-              className="px-2 py-1.5 rounded hover:bg-paper-sunk text-ink-soft hover:text-ink font-label-meta text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-2 py-1.5 rounded hover:bg-paper-sunk text-ink-soft hover:text-ink font-label-meta text-xs transition-colors cursor-pointer"
               title="Clear the whole script"
               type="button"
             >
               Clear
             </button>
-          </div>
-
-          <div className="flex items-center rounded-lg bg-paper-sunk p-0.5" role="group" aria-label="Write or preview">
-            {(
-              [
-                ['write', 'Write'],
-                ['preview', 'Preview'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                onClick={() => setMode(value)}
-                aria-pressed={mode === value}
-                className={`px-3 py-1 rounded-md font-label-meta text-xs cursor-pointer transition-colors ${
-                  mode === value ? 'bg-paper-raised text-ink font-semibold shadow-xs' : 'text-ink-soft hover:text-ink'
-                }`}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -359,41 +329,14 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
         {/* The script */}
         <div className="bg-paper-raised rounded-xl border border-paper-line shadow-xs">
           <div className="p-6 sm:p-10">
-            {/* Hidden, not removed, in Preview: removing it would wipe the browser's Ctrl+Z history. */}
             <textarea
               ref={editorRef}
               value={content}
               onChange={handleContentChange}
-              className={`w-full min-h-[360px] overflow-hidden bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading ${
-                writing ? '' : 'hidden'
-              }`}
+              className="w-full min-h-[360px] overflow-hidden bg-transparent font-body-lg text-lg sm:text-xl text-ink leading-[1.8] resize-none focus:outline-none placeholder:text-ink-faint font-normal font-prompter-reading"
               placeholder="Type or paste your script here"
               spellCheck="true"
             />
-            {writing ? null : paragraphs.length === 0 ? (
-              <p className="min-h-[360px] font-body-sm text-sm text-ink-faint">Nothing to preview yet. Switch to Write and add your script.</p>
-            ) : (
-              <div className="min-h-[360px] space-y-6 font-prompter-reading text-lg sm:text-xl text-ink leading-[1.8]">
-                {paragraphs.map((words, i) => (
-                  <p key={i}>
-                    {words.map((w, j) => (
-                      <span
-                        key={j}
-                        className={`mr-[0.28em] ${
-                          w.cue
-                            ? 'text-[0.6em] align-middle font-label-meta uppercase tracking-wider text-forest opacity-80'
-                            : w.emphasis
-                            ? 'font-bold'
-                            : ''
-                        }`}
-                      >
-                        {w.display}
-                      </span>
-                    ))}
-                  </p>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Bottom bar: length, pace and script actions */}
