@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Script, LicenseStatus } from './types';
 import { DEFAULT_SCRIPTS } from './data/defaultScripts';
 import { nowStamp } from './lib/scriptTime';
+import { track } from './lib/track';
 import { formatStoredReadTime, readSeconds, spokenWordCount } from './lib/scriptText';
 import { copyTitle } from './lib/scriptLibrary';
 import { Header } from './components/Header';
@@ -319,6 +320,7 @@ export default function App() {
   };
 
   const handleNewScript = () => {
+    track('script_created');
     const newId = `ft-${Math.floor(10000 + Math.random() * 90000)}`;
     const newScript: Script = {
       id: newId,

@@ -3,6 +3,7 @@ import { BrandLogo } from '../components/BrandLogo';
 import { supabase } from '../../utils/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { PAYMENTS_ENABLED, RESUME_CHECKOUT_KEY, startCheckout } from '../lib/payments';
+import { track } from '../lib/track';
 
 interface CheckoutFlowViewProps {
   initialEmail?: string;
@@ -41,6 +42,13 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
   const [checkoutError, setCheckoutError] = useState('');
   const [activationTimedOut, setActivationTimedOut] = useState(false);
 
+  // Counted once per return from Dodo; the URL is then changed so a reload doesn't count again.
+  useEffect(() => {
+    if (step !== 'paid' || window.location.search.includes('counted=1')) return;
+    track('purchase_completed');
+    window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}&counted=1`);
+  }, [step]);
+
   // After payment, poll the license until the webhook has turned Pro on.
   useEffect(() => {
     if (step !== 'paid' || !isSignedIn || isPro) return;
@@ -71,6 +79,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
       return;
     }
     setIsSubmitting(true);
+    track('checkout_started');
     setCheckoutError(await startCheckout());
     setIsSubmitting(false);
   };
@@ -104,6 +113,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
     } finally {
       setIsSubmitting(false);
       setStep('confirmation');
+      track('waitlist_joined');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };

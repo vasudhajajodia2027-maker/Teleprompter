@@ -8,6 +8,7 @@ import { Script } from '../types';
 import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, describeWords } from '../lib/voiceMatch';
 import { createVoiceActivityDetector } from '../lib/voiceActivity';
 import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
+import { track } from '../lib/track';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -955,7 +956,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     }
     const resume = canResume;
     runCountdown(() => {
-      if (!resume) handleRestartFromTop();
+      if (!resume) {
+        handleRestartFromTop();
+        track('prompter_started');
+      }
       setSessionStarted(true);
       setIsPaused(false);
     });
@@ -1374,12 +1378,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         };
 
         setTakes((prev) => [...prev, newTake]);
+        track('take_recorded');
         // Go straight to the take just recorded: watch, download or retake.
         setPreviewTake(newTake);
       };
 
       recordStartTimeRef.current = Date.now();
       recorder.start(1000);
+      track('recording_started');
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
       setIsPaused(false);
@@ -1523,6 +1529,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     a.download = filename;
     document.body.appendChild(a);
     a.click();
+    track('take_downloaded');
     document.body.removeChild(a);
 
     setTakes((prev) =>
