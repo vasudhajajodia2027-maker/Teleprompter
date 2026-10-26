@@ -9,6 +9,7 @@ import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, descri
 import { createVoiceActivityDetector } from '../lib/voiceActivity';
 import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
 import { track } from '../lib/track';
+import { installOnDevice, onDeviceStatus, scriptPhrases } from '../lib/onDeviceSpeech';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -39,6 +40,8 @@ interface SpeechRecognitionInstance extends EventTarget {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
+  processLocally?: boolean; // Chrome/Edge 139+: recognize on this computer
+  phrases?: unknown[]; // on-device contextual biasing (SpeechRecognitionPhrase[])
   onresult: ((this: SpeechRecognitionInstance, ev: SpeechRecognitionEvent) => void) | null;
   onerror: ((this: SpeechRecognitionInstance, ev: any) => void) | null;
   onend: ((this: SpeechRecognitionInstance, ev: Event) => void) | null;
@@ -60,6 +63,7 @@ declare global {
       new (): SpeechRecognitionInstance;
     };
     webkitAudioContext?: typeof AudioContext;
+    SpeechRecognitionPhrase?: new (phrase: string, boost?: number) => unknown;
   }
 }
 
@@ -536,6 +540,27 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     [tokenizedWords]
   );
 
+  // On-device recognition (see lib/onDeviceSpeech): used whenever the
+  // browser has the model for this language. A ref, so switching to it never
+  // restarts a running recognizer; the next listening session picks it up.
+  const onDeviceRef = useRef(false);
+  const onDeviceDownloadableRef = useRef(false);
+  const phrasesSupportedRef = useRef(true);
+  useEffect(() => {
+    let cancelled = false;
+    onDeviceRef.current = false;
+    onDeviceDownloadableRef.current = false;
+    onDeviceStatus(speechLang).then((status) => {
+      if (cancelled) return;
+      onDeviceRef.current = status === 'available';
+      onDeviceDownloadableRef.current = status === 'downloadable';
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [speechLang]);
+  const biasPhrases = useMemo(() => scriptPhrases(tokenizedWords.filter((w) => !w.cue).map((w) => w.display)), [tokenizedWords]);
+
   // Where the scroll should anchor: the current word, or — once only the last
   // few words of a line are left — the first spoken word of the next line, so
   // the next line is already waiting at the reading guide.
@@ -950,6 +975,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       setIsPaused(true);
       return;
     }
+    // First Start in a browser that can recognize on-device: fetch the model
+    // in the background (needs this click). Until it is ready, the cloud
+    // recognizer is used as before.
+    if (onDeviceDownloadableRef.current) {
+      onDeviceDownloadableRef.current = false;
+      installOnDevice(speechLang).then((ok) => {
+        if (ok) onDeviceRef.current = true;
+      });
+    }
     if (startsTake) {
       handleToggleRecord();
       return;
@@ -1084,6 +1118,16 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         return;
       }
 
+      // On-device recognition refused (language or phrases not supported, or
+      // the service is off): fall back and start a fresh recognizer, without
+      // telling the speaker anything went wrong.
+      if (recognition?.processLocally && (err === 'phrases-not-supported' || err === 'language-not-supported' || err === 'service-not-allowed')) {
+        if (err === 'phrases-not-supported') phrasesSupportedRef.current = false;
+        else onDeviceRef.current = false;
+        replaceRecognizer(`on-device: ${err}`);
+        return;
+      }
+
       if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
         // No mic means neither word matching nor volume scrolling can run; stop retrying.
         stopped = true;
@@ -1107,6 +1151,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       r.interimResults = true;
       r.lang = speechLang;
       r.maxAlternatives = 1;
+      if (onDeviceRef.current) {
+        r.processLocally = true;
+        const Phrase = window.SpeechRecognitionPhrase;
+        if (Phrase && phrasesSupportedRef.current && biasPhrases.length > 0) {
+          try {
+            r.phrases = biasPhrases.map((p) => new Phrase(p, 2));
+          } catch (e) {
+            phrasesSupportedRef.current = false;
+          }
+        }
+      }
 
       // Events from a recognizer that has been replaced are ignored.
       r.onaudiostart = () => {
