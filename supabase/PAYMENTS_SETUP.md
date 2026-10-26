@@ -14,7 +14,7 @@ Until `VITE_PAYMENTS_ENABLED=true` is set in Vercel, the checkout page stays a w
    ```
 6. **Webhook.** Developer → Webhooks → Add endpoint
    `https://dgxfvntlgnrcluhlbdbd.supabase.co/functions/v1/dodo-webhook` with the events
-   `payment.succeeded` and `refund.succeeded`. Copy its signing secret (`whsec_...`).
+   `payment.succeeded`, `refund.succeeded`, `dispute.lost` and `dispute.accepted`. Copy its signing secret (`whsec_...`).
 7. **Secrets.** Supabase → Edge Functions → Secrets:
    `DODO_PAYMENTS_API_KEY`, `DODO_PRODUCT_ID`, `DODO_WEBHOOK_SECRET`,
    `DODO_ENVIRONMENT` (`test_mode` first, `live_mode` later), `SITE_URL=https://getfirsttake.app`.
