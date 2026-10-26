@@ -203,7 +203,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
         ) : visible.length === 0 ? (
           <p className="font-body-sm text-sm text-ink-soft py-6 text-center">No scripts match “{query.trim()}”.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
             {visible.map((script) => (
               <article
                 key={script.id}
@@ -227,10 +227,10 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-paper-line/50">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-paper-line/50">
                   <button
                     onClick={() => onOpenPrompter(script.id)}
-                    className="px-4 py-2 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-98"
+                    className="h-9 pl-3 pr-4 rounded-lg bg-forest text-on-forest font-body-sm text-sm font-medium hover:bg-forest-dark transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-xs cursor-pointer active:scale-98"
                     aria-label={`Open ${script.title} in the prompter`}
                   >
                     <span aria-hidden="true" className="material-symbols-outlined text-[18px]">play_arrow</span>
@@ -282,7 +282,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
               <span className="font-label-meta text-xs text-ink-faint font-normal">({templates.length})</span>
             </button>
             {templatesOpen && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
                 {templates.map((template) => (
                   <article
                     key={template.id}
