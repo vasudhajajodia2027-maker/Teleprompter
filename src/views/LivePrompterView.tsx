@@ -137,8 +137,8 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
       className={`relative px-4 py-3 rounded-xl transition-[background-color,color,opacity,box-shadow] duration-300 cursor-pointer ${
         isActive
           ? isNightMode
-            ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg scale-[1.01]'
-            : 'bg-marker border-l-4 border-forest shadow-md scale-[1.01]'
+            ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg'
+            : 'bg-marker-soft border-l-4 border-forest shadow-sm'
           : status === 'past'
           ? isNightMode
             ? 'text-[#6B665C] opacity-40 hover:opacity-75'
@@ -152,12 +152,6 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
           : 'text-ink-soft opacity-65 hover:opacity-90'
       }`}
     >
-      {isActive && (
-        <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex items-center text-forest">
-          <span aria-hidden="true" className="material-symbols-outlined text-[24px]">arrow_right</span>
-        </div>
-      )}
-
       <p className={`${isActive ? (isNightMode ? 'text-[#FAF7F0] font-medium' : 'text-ink font-medium') : ''}`}>
         {words.map((wordObj) => {
           const isWordSpoken = wordObj.globalIndex < currentWordIndex;
@@ -176,7 +170,7 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
                 isWordActive && !wordObj.cue && /[\p{L}\p{N}]/u.test(wordObj.display)
                   ? 'underline decoration-forest decoration-2 font-bold'
                   : isWordSpoken && dimSpoken
-                  ? 'opacity-60'
+                  ? 'opacity-40'
                   : ''
               }`}
             >
@@ -1760,7 +1754,6 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       )}
 
       {/* Ambient Top Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[720px] h-48 bg-gradient-to-b from-forest-tint/30 via-forest-tint/10 to-transparent pointer-events-none rounded-full blur-3xl"></div>
 
       {/* ============================================================== */}
       {/* PROMPTER HUD / CONTROL HEADER                                  */}
@@ -2156,9 +2149,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       {/* FLOATING HUD CONTROL DOCK (BOTTOM CENTER)                      */}
       {/* ============================================================== */}
-      <div ref={dockRef} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5 w-full max-w-3xl px-4">
+      <div ref={dockRef} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5 w-full max-w-5xl px-4">
         <div
-          className={`flex flex-wrap items-center justify-between gap-3 w-full px-5 py-3 rounded-2xl shadow-[0_8px_32px_rgba(31,29,26,0.18)] border transition-colors ${
+          className={`flex flex-wrap items-center justify-center lg:justify-between gap-x-4 gap-y-2 w-full px-4 py-2.5 rounded-2xl shadow-[0_8px_32px_rgba(31,29,26,0.18)] border transition-colors ${
             isNightMode
               ? 'bg-[#2A2724]/95 border-[#3A3631] text-[#FAF7F0]'
               : 'bg-paper-raised/95 border-paper-line text-ink'
@@ -2246,7 +2239,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           {/* 2. Speed controls exist only for the auto-scroll fallback */}
           {scrollMode === 'auto' && (
           <>
-          <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
+          <div className={`hidden lg:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
           <div className="flex flex-col gap-1 flex-1 min-w-[200px] max-w-[240px]">
             <div className="flex justify-between items-center font-label-meta text-[11px]">
               <div className="flex items-center gap-1">
@@ -2289,7 +2282,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           </>
           )}
 
-          <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
+          <div className={`hidden lg:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
 
           {/* 3. Display Adjustments: Font Sizing, Text Style, Speech Language, Night Mode, Mirroring */}
           <div className="flex items-center gap-1.5">

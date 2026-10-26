@@ -166,33 +166,22 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               </div>
               <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
                 {PAYMENTS_ENABLED ? 'Get the' : 'Reserve the'}{' '}
-                <mark className="bg-marker text-on-marker px-2.5 py-0.5 rounded-none font-normal italic inline-block">
-                  early price
-                </mark>
+                <mark className="marker-stroke bg-transparent text-ink italic">early price</mark>
               </h1>
             </div>
 
             {/* Main Checkout Card */}
             <div className="p-8 sm:p-10 rounded-2xl bg-paper-raised border border-paper-line shadow-sm space-y-6 text-left relative overflow-hidden">
               {/* Product header row */}
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-paper-line pb-6">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <h2 className="font-headline-lg text-2xl sm:text-3xl font-display text-ink font-semibold">
-                      First Take
-                    </h2>
-                    <span className="font-label-meta text-[10px] tracking-widest uppercase bg-forest-tint text-forest px-2.5 py-1 rounded font-bold border border-forest/20">
-                      EARLY PRICE
-                    </span>
+              <div className="border-b border-paper-line pb-6 space-y-2">
+                <div className="flex items-baseline justify-between gap-4">
+                  <h2 className="font-display text-2xl sm:text-3xl text-ink font-medium">First Take</h2>
+                  <div className="text-right">
+                    <span className="font-display text-5xl text-ink font-medium">₹199</span>
+                    <span className="font-body-sm text-sm text-ink-soft ml-1.5">/ $2</span>
                   </div>
-                  <p className="font-body-sm text-sm text-ink-soft mt-1">
-                    Early price ₹199 / $2, paid once · no recurring charges
-                  </p>
                 </div>
-                <div className="flex items-baseline gap-1 shrink-0">
-                  <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
-                </div>
+                <p className="font-body-sm text-sm text-ink-soft">Early price, paid once. No recurring charges.</p>
               </div>
 
               {/* EVERYTHING INCLUDED checklist */}
@@ -351,7 +340,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               </div>
               <h1 className="font-headline-lg text-4xl sm:text-5xl text-ink font-display tracking-tight leading-tight">
                 You're on the{' '}
-                <mark className="bg-marker text-on-marker px-2.5 py-0.5 rounded-none font-normal italic inline-block">
+                <mark className="marker-stroke bg-transparent text-ink italic">
                   list
                 </mark>
               </h1>

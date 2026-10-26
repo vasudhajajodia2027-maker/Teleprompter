@@ -45,23 +45,19 @@ export const PricingView: React.FC<PricingViewProps> = ({
             <div className="p-8 sm:p-10 rounded-2xl bg-paper-raised border-2 border-forest shadow-xl text-left space-y-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-32 h-32 bg-forest-tint/50 rounded-full blur-2xl pointer-events-none"></div>
 
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-paper-line pb-6">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-headline-lg text-2xl sm:text-3xl font-display text-ink font-semibold">
-                      First Take
-                    </h3>
-                    <span className="font-label-meta text-[10px] tracking-widest uppercase bg-forest-tint text-forest px-2.5 py-0.5 rounded font-bold">
-                      EARLY PRICE
-                    </span>
+              <div className="border-b border-paper-line pb-6 space-y-2">
+                <div className="flex items-baseline justify-between gap-4">
+                  <h3 className="font-display text-2xl sm:text-3xl text-ink font-medium">First Take</h3>
+                  <div className="text-right">
+                    <span className="font-display text-5xl text-ink font-medium">₹199</span>
+                    <span className="font-body-sm text-sm text-ink-soft ml-1.5">/ $2</span>
                   </div>
-                  <p className="font-body-sm text-sm text-ink-soft mt-1 leading-relaxed">
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                     Unlimited scripts, unlimited recording, every future update. No subscription.
                   </p>
-                </div>
-                <div className="flex items-baseline gap-1.5 shrink-0">
-                  <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
+                  <span className="font-body-sm text-xs text-ink-soft shrink-0">Early price, paid once</span>
                 </div>
               </div>
 

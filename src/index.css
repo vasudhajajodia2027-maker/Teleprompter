@@ -42,18 +42,18 @@
   --color-on-secondary-container: #69645a;
   --color-on-surface-variant: #404943;
 
-  --font-display: "Literata", Georgia, serif;
-  --font-headline-lg: "Literata", Georgia, serif;
-  --font-headline-md: "Literata", Georgia, serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-headline-lg: "Fraunces", Georgia, serif;
+  --font-headline-md: "Fraunces", Georgia, serif;
   --font-body-lg: "Literata", Georgia, serif;
   --font-prompter-reading: "Literata", Georgia, serif;
-  --font-headline-sm: "Inter", system-ui, sans-serif;
-  --font-title-md: "Inter", system-ui, sans-serif;
-  --font-body-md: "Inter", system-ui, sans-serif;
-  --font-body-sm: "Inter", system-ui, sans-serif;
-  --font-lead: "Inter", system-ui, sans-serif;
-  --font-label-meta: "JetBrains Mono", monospace;
-  --font-label-eyebrow: "JetBrains Mono", monospace;
+  --font-headline-sm: "Geist", system-ui, sans-serif;
+  --font-title-md: "Geist", system-ui, sans-serif;
+  --font-body-md: "Geist", system-ui, sans-serif;
+  --font-body-sm: "Geist", system-ui, sans-serif;
+  --font-lead: "Geist", system-ui, sans-serif;
+  --font-label-meta: "Geist", system-ui, sans-serif;
+  --font-label-eyebrow: "Geist", system-ui, sans-serif;
 }
 
 @layer base {
@@ -61,7 +61,30 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-body-md);
+    -webkit-font-smoothing: antialiased;
   }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* Fraunces at its soft setting reads warm rather than bookish. */
+.font-display,
+.font-headline-lg,
+.font-headline-md {
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  letter-spacing: -0.02em;
+}
+
+/* Highlighter stroke behind words. No side padding, so punctuation sits right
+   after the word instead of floating past a yellow box. */
+.marker-stroke {
+  background-image: linear-gradient(transparent 58%, var(--color-marker) 58%, var(--color-marker) 92%, transparent 92%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .font-display {
@@ -96,12 +119,16 @@
   font-family: var(--font-body-sm);
 }
 
+/* Small labels: the UI family, with even-width digits for timers and counts. */
 .font-label-meta {
   font-family: var(--font-label-meta);
+  font-variant-numeric: tabular-nums;
 }
 
 .font-label-eyebrow {
   font-family: var(--font-label-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
 }
 
 .material-symbols-outlined {
