@@ -49,6 +49,31 @@ describe('voice follow: reading in order', () => {
     expect(wordAt(say(0, 'most creators dont realise this'))).toBe('but');
   });
 
+  // The browser's newest word is its least certain guess and is often wrong
+  // until the next update. It must not freeze the words heard before it.
+  it('keeps moving when the newest heard word is misheard', () => {
+    // The browser had "...but the", then sent "reason" and a wrong guess together.
+    const p = sayProgressively(0, "most creators don't realize this but the");
+    expect(wordAt(say(p, "most creators don't realize this but the reason zebra"))).toBe('your');
+  });
+
+  it('keeps moving when the two newest heard words are misheard', () => {
+    const p = sayProgressively(0, "most creators don't realize this but the");
+    expect(wordAt(say(p, "most creators don't realize this but the reason zebra banana"))).toBe('your');
+  });
+
+  it('does not jump to a later sentence when words are set aside', () => {
+    // "isn't your" also appears in the next sentence; the misheard tail must
+    // not send the highlight there.
+    const p = sayProgressively(0, "most creators don't realize this but the reason your videos feel robotic isn't your camera");
+    expect(wordAt(say(p, "the reason your videos feel robotic isn't your camera zebra banana"))).toBe('lens.');
+  });
+
+  it('does not move on one matching word followed by misheard words', () => {
+    const p = say(0, "most creators don't realize this");
+    expect(say(p, 'but zebra banana')).toBe(p);
+  });
+
   it('skips bracketed notes like [PAUSE 2s] without waiting for them to be read', () => {
     const p = say(0, "and it certainly isn't your studio lighting it is your teleprompter setup");
     expect(wordAt(say(p, 'traditional software rolls'))).toBe('at');
