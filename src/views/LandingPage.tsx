@@ -282,7 +282,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </ul>
             </div>
             <div className="mt-8 pt-6">
-              <div className="p-4 rounded-lg bg-paper-raised text-ink-soft font-label-meta text-xs border border-paper-line/50">
+              <div className="p-4 rounded-lg bg-paper-raised text-ink-soft font-body-sm text-sm border border-paper-line">
                 Result: more retakes, and more editing afterwards.
               </div>
             </div>
@@ -318,7 +318,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </ul>
             </div>
             <div className="mt-8 pt-6">
-              <div className="p-4 rounded-lg bg-marker-soft text-ink font-label-meta text-xs border border-marker-border/40">
+              <div className="p-4 rounded-lg bg-forest-tint text-ink font-body-sm text-sm border border-forest/20">
                 Result: you read at your own pace and pause when you need to.
               </div>
             </div>
@@ -368,7 +368,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                   Click the red record button. After a 3-second countdown, recording starts, and the highlight moves forward as you say each word.
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-marker-soft font-label-meta text-xs text-ink flex items-center justify-between border border-marker-border/40">
+              <div className="p-4 rounded-lg bg-paper-sunk font-label-meta text-xs text-ink-soft flex items-center justify-between border border-paper-line/50">
                 <span className="font-medium">Follows your words</span>
                 <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-forest">mic</span>
               </div>

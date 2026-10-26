@@ -38,7 +38,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             onClick={(e) => handleLinkClick(e, 'refunds')}
             className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
           >
-            Refunds
+            Refund policy
           </a>
           <a
             href="/privacy"

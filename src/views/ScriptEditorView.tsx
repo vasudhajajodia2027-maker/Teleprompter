@@ -310,7 +310,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
         </div>
 
         {showNotesHint && (
-          <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-marker-soft/60 border border-marker-border/30 font-body-sm text-xs text-ink-soft">
+          <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-paper-sunk border border-paper-line font-body-sm text-xs text-ink-soft">
             <span>
               Text in <code className="font-label-meta text-[11px] bg-paper-raised px-1 py-0.5 rounded text-ink">[brackets]</code> is a note to
               yourself: it stays on screen in the prompter, and you don’t read it aloud.

@@ -30,7 +30,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
             </div>
 
             <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink tracking-tight font-display">
-              One-time pricing.
+              One-time <span className="marker-stroke italic">pricing</span>.
             </h1>
 
             <p className="font-lead text-base sm:text-xl text-ink-soft max-w-[620px] mx-auto leading-relaxed">

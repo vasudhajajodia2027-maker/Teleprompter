@@ -3,5 +3,5 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!assets/|vendor/|robots\\.txt$|sitemap\\.xml$|og-image\\.png$|[0-9a-f]{32}\\.txt$).*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/((?!assets/|vendor/|robots\\.txt$|sitemap\\.xml$|og-image\\.png$|favicon\\.svg$|[0-9a-f]{32}\\.txt$).*)", "destination": "/index.html" }]
 }

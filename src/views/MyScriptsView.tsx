@@ -114,7 +114,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <h1 className="font-headline-lg text-3xl sm:text-4xl text-ink font-medium tracking-tight font-display">
-              My Scripts
+              My <span className="marker-stroke italic">Scripts</span>
             </h1>
             <p className="font-label-meta text-xs text-ink-soft">
               {own.length} {own.length === 1 ? 'script' : 'scripts'} saved
@@ -286,7 +286,7 @@ export const MyScriptsView: React.FC<MyScriptsViewProps> = ({
                 {templates.map((template) => (
                   <article
                     key={template.id}
-                    className="bg-marker-soft/40 rounded-xl p-5 border border-paper-line flex flex-col justify-between gap-4"
+                    className="bg-paper-sunk rounded-xl p-5 border border-paper-line flex flex-col justify-between gap-4"
                   >
                     <div className="space-y-2">
                       <h3 className="font-title-md text-base text-ink font-semibold">{template.title}</h3>

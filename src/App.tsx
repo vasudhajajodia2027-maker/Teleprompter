@@ -134,11 +134,17 @@ export default function App() {
     } else if (currentView === 'pricing') {
       document.title = 'Pricing — First Take';
     } else if (currentView === 'refunds') {
-      document.title = 'Refunds & Cancellation — First Take';
+      document.title = 'Refund Policy — First Take';
     } else if (currentView === 'contact') {
       document.title = 'Contact — First Take';
     } else if (currentView === 'checkout') {
       document.title = PAYMENTS_ENABLED ? 'Buy First Take' : 'Join the Waitlist — First Take';
+    } else if (currentView === 'scripts') {
+      document.title = 'My Scripts — First Take';
+    } else if (currentView === 'editor') {
+      document.title = 'Editor — First Take';
+    } else if (currentView === 'prompter') {
+      document.title = 'Prompter — First Take';
     } else {
       document.title = 'First Take — Speech-Responsive Teleprompter';
     }
