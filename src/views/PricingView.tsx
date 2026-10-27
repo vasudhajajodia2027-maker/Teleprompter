@@ -30,7 +30,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
             </div>
 
             <h1 className="font-headline-lg text-3xl sm:text-5xl text-ink tracking-tight font-display">
-              One-time pricing.
+              One-time <span className="marker-stroke italic">pricing</span>.
             </h1>
 
             <p className="font-lead text-base sm:text-xl text-ink-soft max-w-[620px] mx-auto leading-relaxed">
@@ -45,23 +45,19 @@ export const PricingView: React.FC<PricingViewProps> = ({
             <div className="p-8 sm:p-10 rounded-2xl bg-paper-raised border-2 border-forest shadow-xl text-left space-y-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-32 h-32 bg-forest-tint/50 rounded-full blur-2xl pointer-events-none"></div>
 
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-paper-line pb-6">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-headline-lg text-2xl sm:text-3xl font-display text-ink font-semibold">
-                      First Take
-                    </h3>
-                    <span className="font-label-meta text-[10px] tracking-widest uppercase bg-forest-tint text-forest px-2.5 py-0.5 rounded font-bold">
-                      EARLY PRICE
-                    </span>
+              <div className="border-b border-paper-line pb-6 space-y-2">
+                <div className="flex items-baseline justify-between gap-4">
+                  <h3 className="font-display text-2xl sm:text-3xl text-ink font-medium">First Take</h3>
+                  <div className="text-right">
+                    <span className="font-display text-5xl text-ink font-medium">₹199</span>
+                    <span className="font-body-sm text-sm text-ink-soft ml-1.5">/ $2</span>
                   </div>
-                  <p className="font-body-sm text-sm text-ink-soft mt-1 leading-relaxed">
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                     Unlimited scripts, unlimited recording, every future update. No subscription.
                   </p>
-                </div>
-                <div className="flex items-baseline gap-1.5 shrink-0">
-                  <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                  <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
+                  <span className="font-body-sm text-xs text-ink-soft shrink-0">Early price, paid once</span>
                 </div>
               </div>
 
@@ -141,12 +137,42 @@ export const PricingView: React.FC<PricingViewProps> = ({
               Frequently asked questions
             </h2>
             <p className="font-body-sm text-sm text-ink-soft">
-              Browsers, video files, and where your data is stored.
+              Paying, refunds, browsers, video files, and where your data is stored.
             </p>
           </div>
 
           <div className="rounded-xl bg-paper-raised border border-paper-line overflow-hidden shadow-xs">
             <div className="divide-y divide-paper-line">
+              <div className="p-6 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">payments</span>
+                    How do I pay, and what happens after?
+                  </h3>
+                  <span className="font-label-meta text-xs text-ink-faint">Payment</span>
+                </div>
+                <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
+                  {PAYMENTS_ENABLED
+                    ? 'Sign in with Google, then pay once through Dodo Payments. Your purchase is linked to that Google account and switches on within a few seconds. Dodo Payments emails you the receipt.'
+                    : 'Buying opens soon. When it does, you sign in with Google and pay once through Dodo Payments. Your purchase is linked to that Google account, and Dodo Payments emails you the receipt.'}
+                </p>
+              </div>
+
+              <div className="p-6 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">
+                    <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px]">undo</span>
+                    Can I get a refund?
+                  </h3>
+                  <span className="font-label-meta text-xs text-ink-faint">Refunds</span>
+                </div>
+                <p className="font-body-md text-sm text-ink-soft leading-relaxed pl-7">
+                  Yes. Ask within 14 days of buying and you get the full amount back, no questions asked. There is no
+                  subscription, so there is nothing to cancel.{' '}
+                  <a href="/refunds" className="text-forest underline hover:text-forest-dark">Read the refund policy</a>.
+                </p>
+              </div>
+
               <div className="p-6 space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-title-md text-base font-semibold text-ink flex items-center gap-2">

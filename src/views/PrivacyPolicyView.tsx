@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { PAYMENTS_ENABLED } from '../lib/payments';
 
 interface PrivacyPolicyViewProps {
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact') => void;
 }
 
 export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate }) => {
@@ -37,7 +37,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
 
         <h1 className="font-headline-lg font-display text-3xl sm:text-5xl text-ink font-semibold tracking-tight leading-tight">
           Privacy Policy for{' '}
-          <mark className="bg-marker text-on-marker px-2 py-0.5 rounded-none font-normal italic inline-block">
+          <mark className="marker-stroke bg-transparent text-ink italic">
             First Take
           </mark>
         </h1>

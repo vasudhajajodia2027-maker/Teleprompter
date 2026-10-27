@@ -3,11 +3,11 @@ import { BrandLogo } from './BrandLogo';
 import { OPEN_CONSENT_EVENT } from './ConsentBanner';
 
 interface FooterProps {
-  onNavigate?: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
+  onNavigate?: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact') => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, view: 'privacy' | 'terms') => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, view: 'privacy' | 'terms' | 'refunds' | 'contact') => {
     // If not middle-clicked, Ctrl/Cmd-clicked, let client-side router handle smooth transition
     if (onNavigate && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
       e.preventDefault();
@@ -25,7 +25,21 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </span>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <a
+            href="/contact"
+            onClick={(e) => handleLinkClick(e, 'contact')}
+            className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
+          >
+            Contact
+          </a>
+          <a
+            href="/refunds"
+            onClick={(e) => handleLinkClick(e, 'refunds')}
+            className="font-body-sm text-sm text-ink-soft hover:text-ink transition-colors cursor-pointer"
+          >
+            Refund policy
+          </a>
           <a
             href="/privacy"
             onClick={(e) => handleLinkClick(e, 'privacy')}

@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Script, LicenseStatus } from './types';
 import { DEFAULT_SCRIPTS } from './data/defaultScripts';
 import { nowStamp } from './lib/scriptTime';
+import { track } from './lib/track';
 import { formatStoredReadTime, readSeconds, spokenWordCount } from './lib/scriptText';
 import { copyTitle } from './lib/scriptLibrary';
 import { Header } from './components/Header';
@@ -21,9 +22,11 @@ import { PricingView } from './views/PricingView';
 import { CheckoutFlowView } from './views/CheckoutFlowView';
 import { PrivacyPolicyView } from './views/PrivacyPolicyView';
 import { TermsOfServiceView } from './views/TermsOfServiceView';
+import { RefundPolicyView } from './views/RefundPolicyView';
+import { ContactView } from './views/ContactView';
 import { useAuth } from './context/AuthContext';
 import { supabase } from '../utils/supabase/client';
-import { RESUME_CHECKOUT_KEY } from './lib/payments';
+import { PAYMENTS_ENABLED, RESUME_CHECKOUT_KEY } from './lib/payments';
 
 const LICENSE_CACHE_KEY = 'ft_license_store';
 
@@ -56,13 +59,15 @@ async function fetchServerLicense(userId: string): Promise<LicenseStatus | null>
   };
 }
 
-export type AppView = 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
+export type AppView = 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact';
 
 function getInitialView(): AppView {
   if (typeof window !== 'undefined') {
     const path = window.location.pathname.toLowerCase();
     if (path === '/privacy' || path.startsWith('/privacy')) return 'privacy';
     if (path === '/terms' || path.startsWith('/terms')) return 'terms';
+    if (path === '/refunds' || path.startsWith('/refund')) return 'refunds';
+    if (path === '/contact' || path.startsWith('/contact')) return 'contact';
     if (path === '/checkout' || path.startsWith('/checkout')) return 'checkout';
     if (path === '/pricing' || path.startsWith('/pricing')) return 'pricing';
     if (path === '/scripts' || path.startsWith('/scripts')) return 'scripts';
@@ -78,6 +83,10 @@ function getPathForView(view: AppView): string {
       return '/privacy';
     case 'terms':
       return '/terms';
+    case 'refunds':
+      return '/refunds';
+    case 'contact':
+      return '/contact';
     case 'checkout':
       return '/checkout';
     case 'pricing':
@@ -124,8 +133,18 @@ export default function App() {
       document.title = 'Terms of Service — First Take';
     } else if (currentView === 'pricing') {
       document.title = 'Pricing — First Take';
+    } else if (currentView === 'refunds') {
+      document.title = 'Refund Policy — First Take';
+    } else if (currentView === 'contact') {
+      document.title = 'Contact — First Take';
     } else if (currentView === 'checkout') {
-      document.title = 'Join the Waitlist — First Take';
+      document.title = PAYMENTS_ENABLED ? 'Buy First Take' : 'Join the Waitlist — First Take';
+    } else if (currentView === 'scripts') {
+      document.title = 'My Scripts — First Take';
+    } else if (currentView === 'editor') {
+      document.title = 'Editor — First Take';
+    } else if (currentView === 'prompter') {
+      document.title = 'Prompter — First Take';
     } else {
       document.title = 'First Take — Speech-Responsive Teleprompter';
     }
@@ -307,6 +326,7 @@ export default function App() {
   };
 
   const handleNewScript = () => {
+    track('script_created');
     const newId = `ft-${Math.floor(10000 + Math.random() * 90000)}`;
     const newScript: Script = {
       id: newId,
@@ -638,6 +658,10 @@ export default function App() {
               <PrivacyPolicyView onNavigate={handleNavigate} />
             ) : currentView === 'terms' ? (
               <TermsOfServiceView onNavigate={handleNavigate} />
+            ) : currentView === 'refunds' ? (
+              <RefundPolicyView onNavigate={handleNavigate} />
+            ) : currentView === 'contact' ? (
+              <ContactView onNavigate={handleNavigate} />
             ) : currentView === 'pricing' ? (
               <PricingView
                 license={license}

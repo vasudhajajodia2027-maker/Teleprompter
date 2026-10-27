@@ -197,6 +197,8 @@ const FAR_MIN_WORDS = 4;
 // 2 words that are each at least this long (so not "it is" or "the reason").
 const UNIQUE_MIN_WORDS = 3;
 const UNIQUE_PAIR_MIN_WORD_LENGTH = 4;
+// How many of the newest spoken words may be set aside as misheard.
+const MAX_TRAILING_SKIP = 2;
 
 // How many times the exact token sequence tokens[from..to] occurs in the script.
 function occurrences(tokens: SpeechToken[], from: number, to: number): number {
@@ -228,35 +230,54 @@ export function advanceSpeechPosition(
   let near = { pos: position, words: 0 };
   let far = { pos: position, words: 0, unique: false };
 
-  // Try each script token as the landing spot for the newest heard token.
-  for (let j = Math.max(0, position - 1); j < tokens.length; j++) {
-    let run = 0;
-    while (
-      run < heard.length &&
-      j - run >= 0 &&
-      fuzzyWordMatch(heard[heard.length - 1 - run].norm, tokens[j - run].norm)
-    ) {
-      run++;
-    }
-    if (run === 0) continue;
-    const words = new Set(heard.slice(heard.length - run).map((h) => h.word)).size;
+  // Try each script token as the landing spot for the newest heard token,
+  // then, if needed, for the spoken word or two before it. The browser's
+  // newest word is its least certain guess and often wrong until the next
+  // update; without this, one misheard last word froze everything heard
+  // before it. Setting words aside only allows reading on (near matches of at
+  // least 2 spoken words that continue from the current position), never a
+  // jump, and always drops whole spoken words ("isn't" is two tokens).
+  const wordStarts: number[] = [];
+  heard.forEach((h, i) => {
+    if (i === 0 || heard[i - 1].word !== h.word) wordStarts.push(i);
+  });
+  for (let skip = 0; skip <= Math.min(MAX_TRAILING_SKIP, wordStarts.length - 1); skip++) {
+    // heard[end - 1] lands on the script token
+    const end = skip === 0 ? heard.length : wordStarts[wordStarts.length - skip];
+    for (let j = skip === 0 ? Math.max(0, position - 1) : position; j < tokens.length; j++) {
+      if (skip > 0 && j - position > NEAR_WINDOW) break;
+      let run = 0;
+      while (
+        run < end &&
+        j - run >= 0 &&
+        fuzzyWordMatch(heard[end - 1 - run].norm, tokens[j - run].norm)
+      ) {
+        run++;
+      }
+      if (run === 0) continue;
+      // With words set aside, the match must continue from the current
+      // position, not start further on: a common phrase like "isn't your"
+      // would otherwise match a later sentence.
+      if (skip > 0 && j - run + 1 > position) continue;
+      const words = new Set(heard.slice(end - run, end).map((h) => h.word)).size;
 
-    if (j - position <= NEAR_WINDOW) {
-      // One spoken word moves the script when it is exactly the next word to
-      // say (so the highlight steps on every word, even short ones, right after
-      // Start or a pause), or when it is long and at most two words ahead.
-      const exactNext = words === 1 && j === position && heard[heard.length - 1].norm === tokens[j].norm;
-      const trustedSingle = words === 1 && (exactNext || (lastWordLength >= 5 && j - position <= 2));
-      if ((words >= 2 || trustedSingle) && words > near.words) near = { pos: j + 1, words };
-    } else if (words >= 2 && words > far.words) {
-      // Earliest strongest match wins, so a later repeat of the phrase doesn't.
-      const unique = occurrences(tokens, j - run + 1, j) === 1;
-      let shortestWord = Infinity;
-      for (let k = j - run + 1; k <= j; k++) shortestWord = Math.min(shortestWord, tokens[k].norm.length);
-      const strongEnough =
-        words >= FAR_MIN_WORDS ||
-        (unique && (words >= UNIQUE_MIN_WORDS || shortestWord >= UNIQUE_PAIR_MIN_WORD_LENGTH));
-      if (strongEnough) far = { pos: j + 1, words, unique };
+      if (j - position <= NEAR_WINDOW) {
+        // One spoken word moves the script when it is exactly the next word to
+        // say (so the highlight steps on every word, even short ones, right
+        // after Start or a pause), or when it is long and at most two words ahead.
+        const exactNext = skip === 0 && words === 1 && j === position && heard[end - 1].norm === tokens[j].norm;
+        const trustedSingle = skip === 0 && words === 1 && (exactNext || (lastWordLength >= 5 && j - position <= 2));
+        if ((words >= 2 || trustedSingle) && words > near.words) near = { pos: j + 1, words };
+      } else if (words >= 2 && words > far.words) {
+        // Earliest strongest match wins, so a later repeat of the phrase doesn't.
+        const unique = occurrences(tokens, j - run + 1, j) === 1;
+        let shortestWord = Infinity;
+        for (let k = j - run + 1; k <= j; k++) shortestWord = Math.min(shortestWord, tokens[k].norm.length);
+        const strongEnough =
+          words >= FAR_MIN_WORDS ||
+          (unique && (words >= UNIQUE_MIN_WORDS || shortestWord >= UNIQUE_PAIR_MIN_WORD_LENGTH));
+        if (strongEnough) far = { pos: j + 1, words, unique };
+      }
     }
   }
 

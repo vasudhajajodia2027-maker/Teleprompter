@@ -50,12 +50,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <section className="relative px-6 lg:px-12 pt-12 pb-16 max-w-7xl mx-auto w-full">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-6">
           {/* Display Headline */}
-          <h1 className="font-display text-4xl sm:text-6xl md:text-7xl tracking-tight text-ink max-w-3xl leading-[1.05]">
+          <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-ink max-w-4xl leading-[0.98] font-normal">
             A teleprompter that{' '}
-            <mark className="bg-marker text-on-marker px-2.5 py-0.5 rounded-none font-normal italic inline-block">
-              listens
-            </mark>
-            .
+            <mark className="marker-stroke bg-transparent text-ink italic">listens</mark>.
           </h1>
 
           {/* Lead Narrative */}
@@ -75,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Subtext under hero button - says 'nothing is uploaded' once */}
-          <p className="font-label-meta text-xs text-ink-faint pt-1">
+          <p className="font-body-sm text-sm text-ink-soft pt-1">
             Runs in your browser. Free demo, no account needed. Your videos stay on your computer.
           </p>
         </div>
@@ -140,9 +137,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             </div>
 
             {/* Working Canvas Area with Floating Speaker Thumbnail */}
-            <div className="relative p-8 sm:p-14 bg-paper-raised min-h-[440px] flex flex-col justify-center">
-              {/* Live Camera Preview PiP Inset */}
-              <div className="absolute top-6 right-6 w-36 sm:w-48 rounded-lg overflow-hidden bg-paper-sunk z-10 border border-paper-line shadow-lg">
+            <div className="relative p-6 sm:p-14 sm:pr-60 bg-paper-raised min-h-[440px] flex flex-col justify-center">
+              {/* Live Camera Preview PiP Inset (phones: no room beside the text) */}
+              <div className="hidden sm:block absolute top-6 right-6 w-48 rounded-lg overflow-hidden bg-paper-sunk z-10 border border-paper-line shadow-lg">
                 <div className="relative aspect-video bg-night-paper">
                   <img
                     alt="Speaker looking directly into the camera lens in clean studio lighting"
@@ -181,10 +178,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                           {line.text.includes(line.highlight || '') ? (
                             <>
                               First Take waits until{' '}
-                              <mark className="bg-marker px-1.5 py-0.5 rounded-none font-medium">
-                                you say the words
-                              </mark>
-                              , so you can pause when you need to.
+                              <mark className="marker-stroke bg-transparent text-ink">you say the words</mark>, so
+                              you can pause when you need to.
                             </>
                           ) : (
                             line.text
@@ -227,13 +222,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
 
               {/* Prompt Controls Underlay Bar */}
-              <div className="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-ink-soft border-t border-paper-line/50 text-xs font-label-meta gap-2">
-                <div className="flex items-center gap-3">
-                  <span>SCRIPT WAITS WHEN YOU PAUSE</span>
+              <div className="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-ink-soft border-t border-paper-line/50 text-sm font-body-sm gap-2">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-forest">pause_circle</span>
+                  <span>The script waits when you pause</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-forest"></span>
-                  <span>VIDEO: SAVED ON YOUR DEVICE</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-forest">lock</span>
+                  <span>Video stays on your device</span>
                 </div>
               </div>
             </div>
@@ -286,7 +282,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </ul>
             </div>
             <div className="mt-8 pt-6">
-              <div className="p-4 rounded-lg bg-paper-raised text-ink-soft font-label-meta text-xs border border-paper-line/50">
+              <div className="p-4 rounded-lg bg-paper-raised text-ink-soft font-body-sm text-sm border border-paper-line">
                 Result: more retakes, and more editing afterwards.
               </div>
             </div>
@@ -322,7 +318,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </ul>
             </div>
             <div className="mt-8 pt-6">
-              <div className="p-4 rounded-lg bg-marker-soft text-ink font-label-meta text-xs border border-marker-border/40">
+              <div className="p-4 rounded-lg bg-forest-tint text-ink font-body-sm text-sm border border-forest/20">
                 Result: you read at your own pace and pause when you need to.
               </div>
             </div>
@@ -351,7 +347,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             {/* Step 01 */}
             <div className="bg-paper-raised p-8 rounded-xl flex flex-col justify-between space-y-8 border border-paper-line shadow-xs">
               <div>
-                <span className="font-label-meta text-[32px] font-bold text-ink-faint">01</span>
+                <span className="font-display italic text-5xl text-ink-faint">01</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Paste your script</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
                   Paste your script, or import a .txt or .md file. The prompter shows it in a large serif font. Notes to yourself in [brackets] stay on screen, and you don't have to read them aloud.
@@ -366,13 +362,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             {/* Step 02 */}
             <div className="bg-paper-raised p-8 rounded-xl flex flex-col justify-between space-y-8 border border-paper-line shadow-xs">
               <div>
-                <span className="font-label-meta text-[32px] font-bold text-forest">02</span>
+                <span className="font-display italic text-5xl text-forest">02</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Press record &amp; speak</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
                   Click the red record button. After a 3-second countdown, recording starts, and the highlight moves forward as you say each word.
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-marker-soft font-label-meta text-xs text-ink flex items-center justify-between border border-marker-border/40">
+              <div className="p-4 rounded-lg bg-paper-sunk font-label-meta text-xs text-ink-soft flex items-center justify-between border border-paper-line/50">
                 <span className="font-medium">Follows your words</span>
                 <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-forest">mic</span>
               </div>
@@ -381,7 +377,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             {/* Step 03 */}
             <div className="bg-paper-raised p-8 rounded-xl flex flex-col justify-between space-y-8 border border-paper-line shadow-xs">
               <div>
-                <span className="font-label-meta text-[32px] font-bold text-ink-faint">03</span>
+                <span className="font-display italic text-5xl text-ink-faint">03</span>
                 <h3 className="font-headline-sm text-xl text-ink font-semibold mt-4">Download your take</h3>
                 <p className="font-body-sm text-sm text-ink-soft mt-3 leading-relaxed">
                   Click stop to watch the take, then download it as a video file: WebM in Chrome and Edge, MP4 in Safari. There's no watermark.
@@ -417,18 +413,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="p-8 sm:p-10 rounded-2xl bg-paper-raised border-2 border-forest shadow-xl text-left space-y-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-32 h-32 bg-forest-tint/50 rounded-full blur-2xl pointer-events-none"></div>
 
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-paper-line pb-6">
-              <div>
-                <h3 className="font-headline-lg text-2xl sm:text-3xl font-display text-ink font-semibold">
-                  First Take
-                </h3>
-                <p className="font-body-sm text-sm text-ink-soft mt-1 leading-relaxed">
+            <div className="border-b border-paper-line pb-6 space-y-2">
+              <div className="flex items-baseline justify-between gap-4">
+                <h3 className="font-display text-2xl sm:text-3xl text-ink font-medium">First Take</h3>
+                <div className="text-right">
+                  <span className="font-display text-5xl text-ink font-medium">₹199</span>
+                  <span className="font-body-sm text-sm text-ink-soft ml-1.5">/ $2</span>
+                </div>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                   Unlimited scripts, unlimited recording, every future update. No subscription.
                 </p>
-              </div>
-              <div className="flex items-baseline gap-1.5 shrink-0">
-                <span className="font-display text-4xl sm:text-5xl font-bold text-ink">₹199</span>
-                <span className="font-label-meta text-xs text-ink-soft">/ $2 · early price, paid once</span>
+                <span className="font-body-sm text-xs text-ink-soft shrink-0">Early price, paid once</span>
               </div>
             </div>
 

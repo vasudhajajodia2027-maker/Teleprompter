@@ -9,6 +9,9 @@ import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, descri
 import { createVoiceActivityDetector } from '../lib/voiceActivity';
 import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
 import { trackEvent } from '../lib/referral';
+import { track } from '../lib/track';
+import { installOnDevice, onDeviceStatus, scriptPhrases } from '../lib/onDeviceSpeech';
+import { createDenoisedAudio, micAudioConstraints, NOISE_MODE_KEY, NOISE_MODES, readNoiseMode, type DenoisedAudio, type NoiseMode } from '../lib/noise';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -39,6 +42,8 @@ interface SpeechRecognitionInstance extends EventTarget {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
+  processLocally?: boolean; // Chrome/Edge 139+: recognize on this computer
+  phrases?: unknown[]; // on-device contextual biasing (SpeechRecognitionPhrase[])
   onresult: ((this: SpeechRecognitionInstance, ev: SpeechRecognitionEvent) => void) | null;
   onerror: ((this: SpeechRecognitionInstance, ev: any) => void) | null;
   onend: ((this: SpeechRecognitionInstance, ev: Event) => void) | null;
@@ -60,6 +65,7 @@ declare global {
       new (): SpeechRecognitionInstance;
     };
     webkitAudioContext?: typeof AudioContext;
+    SpeechRecognitionPhrase?: new (phrase: string, boost?: number) => unknown;
   }
 }
 
@@ -138,8 +144,8 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
       className={`relative px-4 py-3 rounded-xl transition-[background-color,color,opacity,box-shadow] duration-300 cursor-pointer ${
         isActive
           ? isNightMode
-            ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg scale-[1.01]'
-            : 'bg-marker border-l-4 border-forest shadow-md scale-[1.01]'
+            ? 'bg-[#2A2724] border-l-4 border-forest shadow-lg'
+            : 'bg-marker-soft border-l-4 border-forest shadow-sm'
           : status === 'past'
           ? isNightMode
             ? 'text-[#6B665C] opacity-40 hover:opacity-75'
@@ -153,12 +159,6 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
           : 'text-ink-soft opacity-65 hover:opacity-90'
       }`}
     >
-      {isActive && (
-        <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex items-center text-forest">
-          <span aria-hidden="true" className="material-symbols-outlined text-[24px]">arrow_right</span>
-        </div>
-      )}
-
       <p className={`${isActive ? (isNightMode ? 'text-[#FAF7F0] font-medium' : 'text-ink font-medium') : ''}`}>
         {words.map((wordObj) => {
           const isWordSpoken = wordObj.globalIndex < currentWordIndex;
@@ -177,7 +177,7 @@ const ScriptParagraph = React.memo(function ScriptParagraph({
                 isWordActive && !wordObj.cue && /[\p{L}\p{N}]/u.test(wordObj.display)
                   ? 'underline decoration-forest decoration-2 font-bold'
                   : isWordSpoken && dimSpoken
-                  ? 'opacity-60'
+                  ? 'opacity-40'
                   : ''
               }`}
             >
@@ -242,6 +242,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       console.warn(e);
     }
   }, [textStyle]);
+  // Background noise handling (lib/noise). Off and Standard change the
+  // browser's own microphone processing; Strong also cleans the recording.
+  const [noiseMode, setNoiseMode] = useState<NoiseMode>(readNoiseMode);
+  const noiseModeRef = useRef<NoiseMode>(noiseMode);
+  noiseModeRef.current = noiseMode;
+  const denoiseRef = useRef<DenoisedAudio | null>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem(NOISE_MODE_KEY, noiseMode);
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [noiseMode]);
   const nextTextStyle = (s: 'serif' | 'sans' | 'bold') => (s === 'serif' ? 'sans' : s === 'sans' ? 'bold' : 'serif');
 
   const [baseWpm, setBaseWpm] = useState<number>(() => {
@@ -542,6 +555,27 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     [tokenizedWords]
   );
 
+  // On-device recognition (see lib/onDeviceSpeech): used whenever the
+  // browser has the model for this language. A ref, so switching to it never
+  // restarts a running recognizer; the next listening session picks it up.
+  const onDeviceRef = useRef(false);
+  const onDeviceDownloadableRef = useRef(false);
+  const phrasesSupportedRef = useRef(true);
+  useEffect(() => {
+    let cancelled = false;
+    onDeviceRef.current = false;
+    onDeviceDownloadableRef.current = false;
+    onDeviceStatus(speechLang).then((status) => {
+      if (cancelled) return;
+      onDeviceRef.current = status === 'available';
+      onDeviceDownloadableRef.current = status === 'downloadable';
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [speechLang]);
+  const biasPhrases = useMemo(() => scriptPhrases(tokenizedWords.filter((w) => !w.cue).map((w) => w.display)), [tokenizedWords]);
+
   // Where the scroll should anchor: the current word, or — once only the last
   // few words of a line are left — the first spoken word of the next line, so
   // the next line is already waiting at the reading guide.
@@ -656,7 +690,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     let stream = webcamStreamRef.current;
     if (!stream || stream.getAudioTracks().length === 0 || stream.getAudioTracks().every(t => t.readyState === 'ended')) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: micAudioConstraints(noiseModeRef.current) });
         if (gen !== audioInitGenRef.current) {
           // Paused (or restarted) while the browser was opening the mic.
           stream.getTracks().forEach((t) => t.stop());
@@ -956,13 +990,25 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       setIsPaused(true);
       return;
     }
+    // First Start in a browser that can recognize on-device: fetch the model
+    // in the background (needs this click). Until it is ready, the cloud
+    // recognizer is used as before.
+    if (onDeviceDownloadableRef.current) {
+      onDeviceDownloadableRef.current = false;
+      installOnDevice(speechLang).then((ok) => {
+        if (ok) onDeviceRef.current = true;
+      });
+    }
     if (startsTake) {
       handleToggleRecord();
       return;
     }
     const resume = canResume;
     runCountdown(() => {
-      if (!resume) handleRestartFromTop();
+      if (!resume) {
+        handleRestartFromTop();
+        track('prompter_started');
+      }
       setSessionStarted(true);
       setIsPaused(false);
     });
@@ -1087,6 +1133,16 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         return;
       }
 
+      // On-device recognition refused (language or phrases not supported, or
+      // the service is off): fall back and start a fresh recognizer, without
+      // telling the speaker anything went wrong.
+      if (recognition?.processLocally && (err === 'phrases-not-supported' || err === 'language-not-supported' || err === 'service-not-allowed')) {
+        if (err === 'phrases-not-supported') phrasesSupportedRef.current = false;
+        else onDeviceRef.current = false;
+        replaceRecognizer(`on-device: ${err}`);
+        return;
+      }
+
       if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
         // No mic means neither word matching nor volume scrolling can run; stop retrying.
         stopped = true;
@@ -1110,6 +1166,17 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       r.interimResults = true;
       r.lang = speechLang;
       r.maxAlternatives = 1;
+      if (onDeviceRef.current) {
+        r.processLocally = true;
+        const Phrase = window.SpeechRecognitionPhrase;
+        if (Phrase && phrasesSupportedRef.current && biasPhrases.length > 0) {
+          try {
+            r.phrases = biasPhrases.map((p) => new Phrase(p, 2));
+          } catch (e) {
+            phrasesSupportedRef.current = false;
+          }
+        }
+      }
 
       // Events from a recognizer that has been replaced are ignored.
       r.onaudiostart = () => {
@@ -1225,7 +1292,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       setCameraError(null);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-        audio: true,
+        audio: micAudioConstraints(noiseModeRef.current),
       });
 
       webcamStreamRef.current = stream;
@@ -1243,7 +1310,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     } catch (err: any) {
       console.warn('Webcam getUserMedia error:', err);
       try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: micAudioConstraints(noiseModeRef.current) });
         webcamStreamRef.current = audioStream;
         setUseLiveWebcam(false);
         setCameraError('Camera not available. You can still record audio.');
@@ -1293,13 +1360,13 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-          audio: true,
+          audio: micAudioConstraints(noiseModeRef.current),
         });
         webcamStreamRef.current = stream;
       } catch (e: any) {
         console.warn('Could not acquire camera for recording:', e);
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: micAudioConstraints(noiseModeRef.current) });
           stream = audioStream;
           webcamStreamRef.current = audioStream;
           setUseLiveWebcam(false);
@@ -1349,7 +1416,23 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       recordedChunksRef.current = [];
       const mimeType = getSupportedMimeType(audioOnly);
       const options = mimeType ? { mimeType } : undefined;
-      const recorder = new MediaRecorder(stream, options);
+
+      // Strong noise removal: record a cleaned copy of the microphone.
+      let recordStream = stream;
+      denoiseRef.current?.close();
+      denoiseRef.current = null;
+      const micTrack = stream.getAudioTracks()[0];
+      if (noiseModeRef.current === 'strong' && micTrack) {
+        try {
+          const denoised = await createDenoisedAudio(micTrack);
+          denoiseRef.current = denoised;
+          recordStream = new MediaStream([...stream.getVideoTracks(), denoised.track]);
+        } catch (e) {
+          console.warn('Strong noise removal unavailable:', e);
+          setVoiceNotice('Strong noise removal couldn’t start in this browser, so this take uses standard noise reduction.');
+        }
+      }
+      const recorder = new MediaRecorder(recordStream, options);
 
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
@@ -1358,6 +1441,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       };
 
       recorder.onstop = () => {
+        denoiseRef.current?.close();
+        denoiseRef.current = null;
         if (discardTakeRef.current) {
           discardTakeRef.current = false;
           recordedChunksRef.current = [];
@@ -1381,12 +1466,14 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         };
 
         setTakes((prev) => [...prev, newTake]);
+        track('take_recorded');
         // Go straight to the take just recorded: watch, download or retake.
         setPreviewTake(newTake);
       };
 
       recordStartTimeRef.current = Date.now();
       recorder.start(1000);
+      track('recording_started');
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
       setIsPaused(false);
@@ -1515,6 +1602,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
         webcamStreamRef.current.getTracks().forEach((track) => track.stop());
       }
       cleanupWebAudioRef.current();
+      denoiseRef.current?.close();
     };
   }, []);
 
@@ -1531,6 +1619,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     a.download = filename;
     document.body.appendChild(a);
     a.click();
+    track('take_downloaded');
     document.body.removeChild(a);
 
     setTakes((prev) =>
@@ -1762,7 +1851,6 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       )}
 
       {/* Ambient Top Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[720px] h-48 bg-gradient-to-b from-forest-tint/30 via-forest-tint/10 to-transparent pointer-events-none rounded-full blur-3xl"></div>
 
       {/* ============================================================== */}
       {/* PROMPTER HUD / CONTROL HEADER                                  */}
@@ -2158,9 +2246,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       {/* FLOATING HUD CONTROL DOCK (BOTTOM CENTER)                      */}
       {/* ============================================================== */}
-      <div ref={dockRef} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5 w-full max-w-3xl px-4">
+      <div ref={dockRef} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5 w-full max-w-5xl px-4">
         <div
-          className={`flex flex-wrap items-center justify-between gap-3 w-full px-5 py-3 rounded-2xl shadow-[0_8px_32px_rgba(31,29,26,0.18)] border transition-colors ${
+          className={`flex flex-wrap items-center justify-center lg:justify-between gap-x-4 gap-y-2 w-full px-4 py-2.5 rounded-2xl shadow-[0_8px_32px_rgba(31,29,26,0.18)] border transition-colors ${
             isNightMode
               ? 'bg-[#2A2724]/95 border-[#3A3631] text-[#FAF7F0]'
               : 'bg-paper-raised/95 border-paper-line text-ink'
@@ -2248,7 +2336,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           {/* 2. Speed controls exist only for the auto-scroll fallback */}
           {scrollMode === 'auto' && (
           <>
-          <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
+          <div className={`hidden lg:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
           <div className="flex flex-col gap-1 flex-1 min-w-[200px] max-w-[240px]">
             <div className="flex justify-between items-center font-label-meta text-[11px]">
               <div className="flex items-center gap-1">
@@ -2291,7 +2379,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
           </>
           )}
 
-          <div className={`hidden sm:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
+          <div className={`hidden lg:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
 
           {/* 3. Display Adjustments: Font Sizing, Text Style, Speech Language, Night Mode, Mirroring */}
           <div className="flex items-center gap-1.5">
@@ -2356,6 +2444,45 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 ))}
               </select>
               <span
+                className={`material-symbols-outlined text-[18px] absolute right-2 pointer-events-none ${
+                  isNightMode ? 'text-[#A39E92]' : 'text-ink-soft'
+                }`}
+              >
+                expand_more
+              </span>
+            </label>
+
+            <label
+              className="relative flex items-center"
+              title={isRecording ? 'Change this between takes' : NOISE_MODES.find((m) => m.value === noiseMode)?.hint}
+            >
+              <span className="sr-only">Background noise</span>
+              <select
+                value={noiseMode}
+                disabled={isRecording}
+                onChange={(e) => {
+                  const mode = e.target.value as NoiseMode;
+                  setNoiseMode(mode);
+                  // Apply to the open microphone right away where the browser allows it.
+                  webcamStreamRef.current?.getAudioTracks().forEach((t) => {
+                    t.applyConstraints(micAudioConstraints(mode)).catch((err) => console.warn(err));
+                  });
+                  e.currentTarget.blur();
+                }}
+                className={`h-9 pl-3 pr-8 rounded-xl border text-sm font-body-md appearance-none cursor-pointer outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isNightMode
+                    ? 'bg-[#3A3631] border-transparent text-[#FAF7F0]'
+                    : 'bg-paper-sunk border-paper-line/60 text-ink hover:bg-paper-raised'
+                }`}
+              >
+                {NOISE_MODES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden="true"
                 className={`material-symbols-outlined text-[18px] absolute right-2 pointer-events-none ${
                   isNightMode ? 'text-[#A39E92]' : 'text-ink-soft'
                 }`}

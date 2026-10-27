@@ -3,9 +3,9 @@ import { BrandLogo } from './BrandLogo';
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface SidebarProps {
-  currentView: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms';
+  currentView: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact';
   activeSection?: 'scripts' | 'prompter';
-  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms') => void;
+  onNavigate: (view: 'overview' | 'scripts' | 'editor' | 'prompter' | 'pricing' | 'checkout' | 'privacy' | 'terms' | 'refunds' | 'contact') => void;
   onNewScript: () => void;
   onSelectSection?: (section: 'scripts' | 'prompter') => void;
   // Below md the sidebar is a drawer: hidden unless open, closed by onClose.
