@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { SUPPORT_EMAIL } from '../lib/contact';
 import { PAYMENTS_ENABLED } from '../lib/payments';
 
 interface TermsOfServiceViewProps {
@@ -139,10 +140,10 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
               <p>
                 {PAYMENTS_ENABLED ? 'Every' : 'Once one-time purchases open, every'} license purchase comes with a 14-day money-back guarantee. If First Take does not fit your speaking workflow for any reason within 14 days of your purchase date, email us at{' '}
                 <a
-                  href="mailto:support@firsttakestudio.com"
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className="text-forest font-medium underline hover:text-forest-dark"
                 >
-                  support@firsttakestudio.com
+                  {SUPPORT_EMAIL}
                 </a>{' '}
                 for a full, unconditional refund.
               </p>
@@ -258,10 +259,10 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
               <p className="pt-1">
                 Email:{' '}
                 <a
-                  href="mailto:support@firsttakestudio.com"
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className="text-forest font-semibold underline hover:text-forest-dark"
                 >
-                  support@firsttakestudio.com
+                  {SUPPORT_EMAIL}
                 </a>
               </p>
             </div>

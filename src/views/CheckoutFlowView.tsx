@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrandLogo } from '../components/BrandLogo';
+import { SUPPORT_EMAIL } from '../lib/contact';
 import { supabase } from '../../utils/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { PAYMENTS_ENABLED, RESUME_CHECKOUT_KEY, startCheckout } from '../lib/payments';
@@ -428,7 +429,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   : !isSignedIn
                   ? 'Sign in with the Google account you bought with to finish.'
                   : activationTimedOut
-                  ? 'Your payment went through, but activation is taking longer than usual. Refresh this page in a minute, or email support@firsttakestudio.com.'
+                  ? `Your payment went through, but activation is taking longer than usual. Refresh this page in a minute, or email ${SUPPORT_EMAIL}.`
                   : 'Activating your license. This takes a few seconds...'}
               </p>
             </div>
@@ -506,7 +507,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
               </a>
             </div>
             <p className="font-body-sm text-xs text-ink-soft">
-              If money left your account anyway, email support@firsttakestudio.com with the time of the payment and we will sort it out.
+              If money left your account anyway, email {SUPPORT_EMAIL} with the time of the payment and we will sort it out.
             </p>
           </div>
         )}
@@ -567,10 +568,10 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   DIRECT EMAIL SUPPORT
                 </span>
                 <a
-                  href="mailto:support@firsttakestudio.com"
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className="font-medium text-forest text-base hover:underline block"
                 >
-                  support@firsttakestudio.com
+                  {SUPPORT_EMAIL}
                 </a>
                 <p className="text-xs text-ink-faint pt-1">
                   We reply within 24 hours.

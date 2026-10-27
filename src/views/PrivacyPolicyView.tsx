@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { SUPPORT_EMAIL } from '../lib/contact';
 import { PAYMENTS_ENABLED } from '../lib/payments';
 
 interface PrivacyPolicyViewProps {
@@ -90,10 +91,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
             <p>
               For any questions regarding this policy or your personal data, you can reach our operator directly at{' '}
               <a
-                href="mailto:support@firsttakestudio.com"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="text-forest font-medium underline hover:text-forest-dark"
               >
-                support@firsttakestudio.com
+                {SUPPORT_EMAIL}
               </a>.
             </p>
           </div>
@@ -232,10 +233,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
             <p>
               You have the right to request access to the personal data we hold about you, or to request complete deletion of your account, scripts, and email from our systems. To submit a deletion or access request, email us at{' '}
               <a
-                href="mailto:support@firsttakestudio.com"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="text-forest font-medium underline hover:text-forest-dark"
               >
-                support@firsttakestudio.com
+                {SUPPORT_EMAIL}
               </a>. Requests are processed promptly within 30 days.
             </p>
           </div>
@@ -289,10 +290,10 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
               <p className="pt-1">
                 Email:{' '}
                 <a
-                  href="mailto:support@firsttakestudio.com"
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className="text-forest font-semibold underline hover:text-forest-dark"
                 >
-                  support@firsttakestudio.com
+                  {SUPPORT_EMAIL}
                 </a>
               </p>
             </div>
