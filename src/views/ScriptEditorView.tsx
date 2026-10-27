@@ -233,7 +233,7 @@ export const ScriptEditorView: React.FC<ScriptEditorViewProps> = ({
             </button>
             <input
               aria-label="Script title"
-              className="font-headline-md text-2xl sm:text-3xl text-ink bg-transparent focus:outline-none focus:bg-paper-sunk/60 rounded px-1 -ml-1 transition-colors w-full font-medium tracking-tight font-display"
+              className="font-headline-md text-xl sm:text-3xl text-ink bg-transparent focus:outline-none focus:bg-paper-sunk/60 rounded px-1 -ml-1 transition-colors w-full font-medium tracking-tight font-display text-ellipsis"
               value={title}
               onChange={handleTitleChange}
               onBlur={() => {

@@ -909,16 +909,19 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     return groups;
   }, [paragraphs, tokenizedWords]);
 
-  // A new text size or style reflows every line. Keep the word being read on
-  // the reading guide (before paint, so the text never visibly jumps), whether
-  // the prompter is running or paused.
+  // A new text size or style reflows every line, and a moved reading guide
+  // (measured after the first render, and again whenever the top bar or
+  // toolbar changes height) shifts the script's top padding. Keep the word
+  // being read on the reading guide (before paint, so the text never visibly
+  // jumps), whether the prompter is running or paused. Without re-running on
+  // `guideLayout`, phones opened with the first line hidden under the top bar.
   useLayoutEffect(() => {
     const container = prompterContainerRef.current;
     const wordEl = document.getElementById(`ft-word-${currentWordIndexRef.current}`);
     if (!container || !wordEl) return;
     const guideY = readingGuideY();
     container.scrollTop += wordEl.getBoundingClientRect().top - container.getBoundingClientRect().top - guideY;
-  }, [fontSize, textStyle]);
+  }, [fontSize, textStyle, guideLayout]);
 
   const scrollElementToGuide = useCallback((element: HTMLElement | null, behavior: ScrollBehavior = 'smooth') => {
     const container = prompterContainerRef.current;
@@ -2421,8 +2424,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
           <div className={`hidden lg:block w-[1px] h-7 ${isNightMode ? 'bg-[#3A3631]' : 'bg-paper-line'}`}></div>
 
-          {/* 3. Display Adjustments: Font Sizing, Text Style, Speech Language, Night Mode, Mirroring */}
-          <div className="flex items-center gap-1.5">
+          {/* 3. Display Adjustments: Font Sizing, Text Style, Speech Language, Night Mode, Mirroring.
+              Wraps on phones, where one row is wider than the screen and the
+              outer controls would sit off both edges. */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
             <div
               className={`flex items-center rounded-xl p-0.5 border ${
                 isNightMode ? 'bg-[#3A3631] border-transparent' : 'bg-paper-sunk border-paper-line/60'
@@ -2492,8 +2497,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
               </span>
             </label>
 
+            {/* On narrower windows the two wide menus go last, so night mode and
+                mirror share the first row with the text controls. */}
             <label
-              className="relative flex items-center"
+              className="relative flex items-center order-1 lg:order-none"
               title={isRecording ? 'Change this between takes' : NOISE_MODES.find((m) => m.value === noiseMode)?.hint}
             >
               <span className="sr-only">Background noise</span>
@@ -2532,7 +2539,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
             </label>
 
             {scrollMode === 'voice' && (
-              <label className="relative flex items-center" title="The language you'll speak">
+              <label className="relative flex items-center order-1 lg:order-none" title="The language you'll speak">
                 <span className="sr-only">Speech language</span>
                 <select
                   value={speechLang}

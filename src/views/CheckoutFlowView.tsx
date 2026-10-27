@@ -129,7 +129,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
     <div className="min-h-screen bg-paper text-ink flex flex-col justify-between selection:bg-marker selection:text-ink font-body-sm">
       {/* 1. SHARED HEADER ON ALL CHECKOUT SCREENS */}
       <header className="sticky top-0 z-50 bg-paper/90 backdrop-blur-md border-b border-paper-line">
-        <div className="max-w-5xl mx-auto px-6 h-18 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-3">
           {/* Logo shown once: 'First Take' with yellow highlight on 'Take' + small letter-spaced 'STUDIO' */}
           <button
             onClick={onExit}
@@ -141,11 +141,13 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
           </button>
 
           {/* Right controls: 'WAITLIST' badge + separate 'Support' link with clear spacing */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-raised border border-paper-line text-ink-soft shadow-xs">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-paper-raised border border-paper-line text-ink-soft shadow-xs">
               <span aria-hidden="true" className="material-symbols-outlined text-[15px] text-forest">lock</span>
-              <span className="font-label-meta tracking-widest text-[11px] uppercase font-bold text-ink-soft">
-                {PAYMENTS_ENABLED ? 'Secure checkout' : 'Waitlist'}
+              <span className="font-label-meta tracking-wider sm:tracking-widest text-[11px] uppercase font-bold text-ink-soft whitespace-nowrap">
+                {/* Phones get the short label: logo, badge and Support share one row. */}
+                <span className="sm:hidden">{PAYMENTS_ENABLED ? 'Secure' : 'Waitlist'}</span>
+                <span className="hidden sm:inline">{PAYMENTS_ENABLED ? 'Secure checkout' : 'Waitlist'}</span>
               </span>
             </div>
 
@@ -247,7 +249,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                       <button
                         onClick={handleBuy}
                         disabled={isSubmitting}
-                        className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                        className="w-full py-4 px-4 sm:px-6 rounded-lg bg-forest text-on-forest font-title-md text-[15px] sm:text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                       >
                         {isSubmitting ? (
                           <>
@@ -306,7 +308,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-4 px-6 rounded-lg bg-forest text-on-forest font-title-md text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full py-4 px-4 sm:px-6 rounded-lg bg-forest text-on-forest font-title-md text-[15px] sm:text-base font-semibold hover:bg-forest-dark transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                   >
                     {isSubmitting ? (
                       <>

@@ -53,7 +53,9 @@ export const PricingView: React.FC<PricingViewProps> = ({
                     <span className="font-body-sm text-sm text-ink-soft ml-1.5">/ $2</span>
                   </div>
                 </div>
-                <div className="flex items-baseline justify-between gap-4">
+                {/* Stacked on phones: beside "Early price, paid once" the description
+                    was squeezed into a column a few words wide. */}
+                <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-4">
                   <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
                     Record on any number of scripts and download every take. Every future update. No subscription.
                   </p>
