@@ -194,6 +194,22 @@ export default function App() {
     return !!serverLicense?.isActive;
   }, [user]);
 
+  // The free-limit notice opens checkout in a new tab so the prompter keeps
+  // its takes. Coming back to this tab re-reads the license, so a purchase
+  // made there unlocks downloads here without a reload.
+  useEffect(() => {
+    if (!user || isPro) return;
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') refreshLicense();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [user, isPro, refreshLicense]);
+
   // Signed out is free. Signed in, the server value overwrites the cache.
   useEffect(() => {
     if (authLoading) return;

@@ -10,6 +10,7 @@ import { createVoiceActivityDetector } from '../lib/voiceActivity';
 import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
 import { trackEvent } from '../lib/referral';
 import { track } from '../lib/track';
+import { canDownload, canRecordScript, downloadsLeft, FREE_DOWNLOAD_LIMIT, FREE_SCRIPT_LIMIT, markDownloaded, markScriptRecorded, scriptsLeft } from '../lib/freeLimits';
 import { installOnDevice, onDeviceStatus, scriptPhrases } from '../lib/onDeviceSpeech';
 import { createDenoisedAudio, micAudioConstraints, NOISE_MODE_KEY, NOISE_MODES, readNoiseMode, type DenoisedAudio, type NoiseMode } from '../lib/noise';
 
@@ -213,6 +214,7 @@ const MIC_BLOCKED_NOTICE =
 export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   script,
   onExit,
+  isPro = false,
 }) => {
   // 1. Settings state (persisted to localStorage)
   const [fontSize, setFontSize] = useState<number>(() => {
@@ -359,6 +361,12 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
   // Countdown overlay
   const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Free tier: which limit was just hit (shows the upgrade modal), and what's
+  // left, re-read after each counted recording or download.
+  const [limitHit, setLimitHit] = useState<'record' | 'download' | null>(null);
+  const [freeLeft, setFreeLeft] = useState(() => ({ scripts: scriptsLeft(), downloads: downloadsLeft() }));
+  const refreshFreeLeft = () => setFreeLeft({ scripts: scriptsLeft(), downloads: downloadsLeft() });
 
   // Modals
   const [showTakesModal, setShowTakesModal] = useState<boolean>(false);
@@ -1479,6 +1487,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       setIsPaused(false);
       setElapsedSeconds(0);
       trackEvent('take_started');
+      if (!isPro) {
+        markScriptRecorded(script.id);
+        refreshFreeLeft();
+      }
     } catch (err: any) {
       console.warn('MediaRecorder start error:', err);
       setCameraError(`Recording failed: ${err.message || 'MediaRecorder error'}`);
@@ -1530,6 +1542,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       // The take is over: the next Start begins a new one from the first line.
       setSessionStarted(false);
     } else {
+      // Checked before the countdown, so a blocked take never starts.
+      if (!isPro && !canRecordScript(script.id)) {
+        setLimitHit('record');
+        return;
+      }
       runCountdown(() => {
         // Every take starts from the first line of the script.
         handleRestartFromTop();
@@ -1607,6 +1624,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
   }, []);
 
   const handleDownloadTake = (take: PrompterTake) => {
+    // The take stays in the list, so it can still be saved after buying.
+    if (!isPro && !canDownload()) {
+      setLimitHit('download');
+      return;
+    }
     const ext = take.mimeType.includes('mp4') ? (take.audioOnly ? 'm4a' : 'mp4') : take.audioOnly ? 'weba' : 'webm';
     const slug = (script.title || 'first-take-script')
       .toLowerCase()
@@ -1620,6 +1642,10 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
     document.body.appendChild(a);
     a.click();
     track('take_downloaded');
+    if (!isPro) {
+      markDownloaded();
+      refreshFreeLeft();
+    }
     document.body.removeChild(a);
 
     setTakes((prev) =>
@@ -1645,9 +1671,9 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
         return;
       }
-      // While a take, the takes list or help is open, keys belong to that
-      // window (Space pauses the video); only Escape (close) passes through.
-      if ((previewTake || showTakesModal || showHelpModal) && e.code !== 'Escape') {
+      // While a take, the takes list, help or a free-limit notice is open, keys
+      // belong to that window (Space pauses the video); only Escape (close) passes through.
+      if ((previewTake || showTakesModal || showHelpModal || limitHit) && e.code !== 'Escape') {
         return;
       }
 
@@ -1687,7 +1713,8 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       } else if (e.code === 'Escape') {
         e.preventDefault();
         // Close an open panel first; only leave the studio when nothing is open.
-        if (previewTake) setPreviewTake(null);
+        if (limitHit) setLimitHit(null);
+        else if (previewTake) setPreviewTake(null);
         else if (showHelpModal) setShowHelpModal(false);
         else if (showTakesModal) setShowTakesModal(false);
         else if (countdown !== null) cancelCountdown();
@@ -1697,7 +1724,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRecording, isPaused, takes, handleToggleRecord, previewTake, showHelpModal, showTakesModal, countdown]);
+  }, [isRecording, isPaused, takes, handleToggleRecord, previewTake, showHelpModal, showTakesModal, countdown, limitHit]);
 
   const handleExit = () => {
     const hasUnsavedTakes = takes.some((t) => !t.isDownloaded);
@@ -2331,6 +2358,15 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                 <span>Record take</span>
               </button>
             )}
+
+            {!isPro && !isRecording && (
+              <span
+                className={`font-label-meta text-[11px] leading-tight ${isNightMode ? 'text-[#7A756B]' : 'text-ink-faint'}`}
+                title="The free version records on up to 10 scripts and downloads 3 videos. First Take removes both limits."
+              >
+                Free: {freeLeft.scripts} of {FREE_SCRIPT_LIMIT} scripts · {freeLeft.downloads} of {FREE_DOWNLOAD_LIMIT} downloads left
+              </span>
+            )}
           </div>
 
           {/* 2. Speed controls exist only for the auto-scroll fallback */}
@@ -2731,6 +2767,64 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* FREE LIMIT REACHED                                             */}
+      {/* ============================================================== */}
+      {limitHit && (
+        <div className="fixed inset-0 z-80 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="free-limit-title"
+            className="bg-paper-raised rounded-2xl max-w-md w-full p-6 sm:p-8 border border-paper-line shadow-2xl text-ink space-y-5 animate-scaleIn"
+          >
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="material-symbols-outlined text-forest text-[22px]">
+                {limitHit === 'record' ? 'videocam' : 'download'}
+              </span>
+              <h3 id="free-limit-title" className="font-headline-sm text-lg font-semibold text-ink">
+                {limitHit === 'record' ? "You've recorded on 10 scripts" : "You've used your 3 free downloads"}
+              </h3>
+            </div>
+            <div className="space-y-3 font-body-sm text-sm text-ink-soft leading-relaxed">
+              {limitHit === 'record' ? (
+                <p>
+                  The free version lets you record takes on up to {FREE_SCRIPT_LIMIT} different scripts, and you've used all of them. You can still record more takes on scripts you've already recorded, and the prompter itself keeps working on any script.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    The free version lets you download {FREE_DOWNLOAD_LIMIT} videos, and you've used all of them.
+                  </p>
+                  <p>
+                    <strong className="text-ink">Your take isn't lost.</strong> It's still here in this browser. Keep this tab open, buy First Take in the tab that opens, then come back and download it.
+                  </p>
+                </>
+              )}
+              <p>First Take removes both limits: record on any number of scripts and download every take. One payment, no subscription.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <button
+                onClick={() => {
+                  // A new tab, so this prompter and its takes stay open.
+                  window.open('/checkout', '_blank', 'noopener');
+                  setLimitHit(null);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-lg bg-forest text-on-forest font-title-md text-sm font-semibold hover:bg-forest-dark transition-all cursor-pointer shadow-xs"
+              >
+                Get First Take for ₹199 / $2
+              </button>
+              <button
+                onClick={() => setLimitHit(null)}
+                className="py-2.5 px-4 rounded-lg bg-paper-sunk hover:bg-paper-line/50 text-ink font-body-sm text-sm font-medium cursor-pointer"
+              >
+                Not now
+              </button>
             </div>
           </div>
         </div>

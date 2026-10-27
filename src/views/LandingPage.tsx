@@ -73,7 +73,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           {/* Subtext under hero button - says 'nothing is uploaded' once */}
           <p className="font-body-sm text-sm text-ink-soft pt-1">
-            Runs in your browser. Free demo, no account needed. Your videos stay on your computer.
+            Runs in your browser. Free for up to 10 scripts and 3 downloads, no account needed. Your videos stay on your computer.
           </p>
         </div>
 
@@ -423,7 +423,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
               <div className="flex items-baseline justify-between gap-4">
                 <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                  Unlimited scripts, unlimited recording, every future update. No subscription.
+                  Record on any number of scripts and download every take. Every future update. No subscription.
                 </p>
                 <span className="font-body-sm text-xs text-ink-soft shrink-0">Early price, paid once</span>
               </div>
@@ -432,11 +432,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             <ul className="space-y-3.5 font-body-sm text-sm text-ink">
               <li className="flex items-start gap-3">
                 <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                <span>Unlimited scripts in your library</span>
+                <span>Record on unlimited scripts (free: 10)</span>
               </li>
               <li className="flex items-start gap-3">
                 <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
-                <span>Unlimited recording takes</span>
+                <span>Unlimited video downloads (free: 3)</span>
               </li>
               <li className="flex items-start gap-3">
                 <span aria-hidden="true" className="material-symbols-outlined text-forest text-[20px] shrink-0 mt-0.5">check_circle</span>
@@ -461,7 +461,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span aria-hidden="true" className="material-symbols-outlined text-[18px]">bolt</span>
               </button>
               <p className="font-label-meta text-xs text-ink-soft">
-                Try the free demo first. No sign-up needed.
+                Try it free first: record on up to 10 scripts and download 3 videos. No sign-up needed.
               </p>
             </div>
           </div>

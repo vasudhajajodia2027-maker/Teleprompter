@@ -103,7 +103,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
                 A. The Free Demo
               </h3>
               <p>
-                We provide a free demo version of First Take that requires no account, credit card, or payment information. In the free demo, you can use the speech-responsive teleprompter and create scripts. Data in the free demo is stored solely within your local browser storage.
+                We provide a free demo version of First Take that requires no account, credit card, or payment information. In the free demo, you can use the speech-responsive teleprompter, create scripts, record takes on up to 10 different scripts, and download up to 3 videos. These limits are counted in your browser; deleting a script does not restore its slot. Data in the free demo is stored solely within your local browser storage.
               </p>
             </div>
 
@@ -112,7 +112,7 @@ export const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onNaviga
                 B. The Lifetime License
               </h3>
               <p>
-                {PAYMENTS_ENABLED ? 'We offer' : 'We plan to offer'} a single, one-time lifetime license at an early price of ₹199 (in India) or US$2 (elsewhere). This purchase grants permanent access to First Take for personal and commercial content creation, including unlimited scripts, unlimited video takes, camera and microphone export, optical mirror mode, and all future updates with no recurring subscription fees.
+                {PAYMENTS_ENABLED ? 'We offer' : 'We plan to offer'} a single, one-time lifetime license at an early price of ₹199 (in India) or US$2 (elsewhere). This purchase grants permanent access to First Take for personal and commercial content creation, including recording on unlimited scripts, unlimited video takes and downloads, camera and microphone export, optical mirror mode, and all future updates with no recurring subscription fees.
               </p>
             </div>
 

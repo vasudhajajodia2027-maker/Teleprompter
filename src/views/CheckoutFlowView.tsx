@@ -204,11 +204,11 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                 <ul className="space-y-2.5 font-body-sm text-sm text-ink">
                   <li className="flex items-start gap-3">
                     <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
-                    <span>Unlimited scripts in your library</span>
+                    <span>Record on unlimited scripts (free: 10)</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
-                    <span>Unlimited recording takes</span>
+                    <span>Unlimited video downloads (free: 3)</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span aria-hidden="true" className="material-symbols-outlined text-forest text-[19px] shrink-0 mt-0.5">check_circle</span>
@@ -374,7 +374,7 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
                   Until then, use the free demo
                 </h3>
                 <p className="font-body-sm text-sm text-ink-soft leading-relaxed">
-                  The prompter is free to use, with no sign-up. Paste your script and record a take now.
+                  The free version needs no sign-up: record on up to 10 scripts and download 3 videos. Paste your script and record a take now.
                 </p>
               </div>
 
