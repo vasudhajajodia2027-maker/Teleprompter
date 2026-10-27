@@ -113,7 +113,7 @@ export const PrivacyPolicyView: React.FC<PrivacyPolicyViewProps> = ({ onNavigate
                 A. Waitlist Submissions
               </h3>
               <p>
-                When you submit your email address on our checkout or waitlist screen, we collect and store your email address solely to notify you when First Take purchases and new releases become available. We do not use this email address for unrelated marketing.
+                When you submit your email address on our checkout or waitlist screen, we collect and store your email address, and the name of the link that brought you to the site if there was one (for example "reddit"), solely to notify you when First Take purchases and new releases become available. We do not use this email address for unrelated marketing.
               </p>
             </div>
 

@@ -8,6 +8,7 @@ import { Script } from '../types';
 import { buildSpeechTokens, advanceSpeechPosition, tailTokensFromResults, describeWords } from '../lib/voiceMatch';
 import { createVoiceActivityDetector } from '../lib/voiceActivity';
 import { defaultSpeechLang, SPEECH_LANGS } from '../lib/speechLang';
+import { trackEvent } from '../lib/referral';
 
 // Speech Recognition interfaces for Web Speech API
 interface SpeechRecognitionResultItem {
@@ -1390,6 +1391,7 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       setIsRecording(true);
       setIsPaused(false);
       setElapsedSeconds(0);
+      trackEvent('take_started');
     } catch (err: any) {
       console.warn('MediaRecorder start error:', err);
       setCameraError(`Recording failed: ${err.message || 'MediaRecorder error'}`);

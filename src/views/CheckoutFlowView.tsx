@@ -3,6 +3,7 @@ import { BrandLogo } from '../components/BrandLogo';
 import { supabase } from '../../utils/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { PAYMENTS_ENABLED, RESUME_CHECKOUT_KEY, startCheckout } from '../lib/payments';
+import { getRef } from '../lib/referral';
 
 interface CheckoutFlowViewProps {
   initialEmail?: string;
@@ -98,8 +99,13 @@ export const CheckoutFlowView: React.FC<CheckoutFlowViewProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Save email directly to Supabase waitlist table
-      const { error } = await supabase.from('waitlist').insert([{ email: cleanEmail }]);
+      // Save email directly to Supabase waitlist table, with the link it came from
+      const ref = getRef();
+      let { error } = await supabase.from('waitlist').insert([{ email: cleanEmail, ref }]);
+      // Until 003_waitlist_ref.sql is run there is no ref column; keep the email.
+      if (error && ref && /ref/i.test(error.message)) {
+        ({ error } = await supabase.from('waitlist').insert([{ email: cleanEmail }]));
+      }
       if (error) {
         console.warn('Supabase waitlist insert note:', error.message);
       }
