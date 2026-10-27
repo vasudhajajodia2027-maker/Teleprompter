@@ -2211,7 +2211,11 @@ export const LivePrompterView: React.FC<LivePrompterViewProps> = ({
       {/* ============================================================== */}
       <div
         ref={prompterContainerRef}
-        onScroll={updateActiveLineFromScroll}
+        onScroll={() => {
+          // In voice mode only speech (or a click to re-anchor) moves the reading
+          // position, so scrolling never fades words that weren't said.
+          if (scrollModeRef.current !== 'voice') updateActiveLineFromScroll();
+        }}
         style={{ height: scrollAreaHeight ? `${scrollAreaHeight}px` : '100vh' }}
         className="overflow-y-auto overflow-x-hidden w-full relative px-6 flex justify-center focus:outline-none"
       >
